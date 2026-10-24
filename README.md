@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TUF Control Center (Linux)
 
 > A polished, Linux-native, open-source G-Helper alternative for Ubuntu on ASUS TUF and ROG gaming laptops.
@@ -52,3 +53,6 @@ TUF Control Center provides centralized hardware control over ASUS gaming laptop
 ## License
 
 GPL-3.0-or-later
+=======
+# TUF-Control-Center
+>>>>>>> c197667ddd5199a40efd3c190054585f8e994c95
