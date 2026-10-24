@@ -55,6 +55,6 @@ impl TufApplication {
             });
         });
 
-        self.app.run()
+        self.app.run_with_args::<String>(&[])
     }
 }

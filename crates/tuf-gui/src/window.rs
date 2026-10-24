@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Label, Orientation};
 use adw::prelude::*;
-use adw::{ApplicationWindow, HeaderBar, ViewStack, ViewSwitcher, ViewSwitcherBar};
+use adw::{ApplicationWindow, HeaderBar, ViewStack, ViewSwitcherBar};
 
 use tuf_core::models::SystemTelemetry;
 use crate::app::BackendHandle;
@@ -109,13 +109,6 @@ impl MainWindow {
             .stack(&stack)
             .reveal(true)
             .build();
-
-        let top_switcher = ViewSwitcher::builder()
-            .stack(&stack)
-            .policy(adw::ViewSwitcherPolicy::Wide)
-            .build();
-
-        header.pack_end(&top_switcher);
 
         let main_box = GtkBox::new(Orientation::Vertical, 0);
         main_box.append(&header);
