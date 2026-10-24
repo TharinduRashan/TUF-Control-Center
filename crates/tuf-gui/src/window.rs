@@ -13,6 +13,9 @@ use crate::pages::{
 pub struct MainWindow {
     pub window: ApplicationWindow,
     pub dashboard_page: DashboardPage,
+    pub battery_page: BatteryPage,
+    pub fans_page: FansPage,
+    pub gpu_page: GpuPage,
     pub _stack: ViewStack,
 }
 
@@ -121,11 +124,17 @@ impl MainWindow {
         Self {
             window,
             dashboard_page,
+            battery_page,
+            fans_page,
+            gpu_page,
             _stack: stack,
         }
     }
 
     pub fn update_telemetry(&self, telemetry: &SystemTelemetry) {
         self.dashboard_page.update_telemetry(telemetry);
+        self.battery_page.update_telemetry(telemetry);
+        self.fans_page.update_telemetry(telemetry);
+        self.gpu_page.update_telemetry(telemetry);
     }
 }

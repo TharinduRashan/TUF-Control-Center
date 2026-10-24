@@ -22,6 +22,13 @@ impl SystemPage {
             .subtitle("Toggle laptop precision touchpad")
             .build();
         let touchpad_switch = Switch::builder().active(true).build();
+        touchpad_switch.connect_state_set(move |_, state| {
+            let mode = if state { "enabled" } else { "disabled" };
+            let _ = std::process::Command::new("gsettings")
+                .args(["set", "org.gnome.desktop.peripherals.touchpad", "send-events", mode])
+                .spawn();
+            gtk4::glib::Propagation::Proceed
+        });
         touchpad_row.add_suffix(&touchpad_switch);
         group.add(&touchpad_row);
 
@@ -30,6 +37,17 @@ impl SystemPage {
             .subtitle("PipeWire / WirePlumber audio capture input state")
             .build();
         let mic_switch = Switch::builder().active(true).build();
+        mic_switch.connect_state_set(move |_, state| {
+            let mute_arg = if state { "0" } else { "1" };
+            let _ = std::process::Command::new("wpctl")
+                .args(["set-mute", "@DEFAULT_AUDIO_SOURCE@", mute_arg])
+                .spawn();
+            let pactl_arg = if state { "0" } else { "1" };
+            let _ = std::process::Command::new("pactl")
+                .args(["set-source-mute", "@DEFAULT_SOURCE@", pactl_arg])
+                .spawn();
+            gtk4::glib::Propagation::Proceed
+        });
         mic_row.add_suffix(&mic_switch);
         group.add(&mic_row);
 

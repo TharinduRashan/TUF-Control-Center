@@ -26,6 +26,30 @@ impl ControlCenterDaemon {
             simulation,
         }
     }
+
+    async fn check_auth(
+        &self,
+        conn: &zbus::Connection,
+        hdr: &zbus::message::Header<'_>,
+        action_id: &str,
+    ) -> zbus::fdo::Result<()> {
+        let (uid, pid) = if let Some(sender) = hdr.sender() {
+            if let Ok(dbus_proxy) = zbus::fdo::DBusProxy::new(conn).await {
+                let bus_name: zbus::names::BusName<'_> = sender.clone().into();
+                let uid = dbus_proxy.get_connection_unix_user(bus_name.clone()).await.unwrap_or(1000);
+                let pid = dbus_proxy.get_connection_unix_process_id(bus_name).await.unwrap_or(0);
+                (uid, pid)
+            } else {
+                (1000, 0)
+            }
+        } else {
+            (1000, 0)
+        };
+
+        self.polkit.check_authorization(pid, uid, action_id)
+            .map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[interface(name = "org.tuf.ControlCenter")]
@@ -40,14 +64,11 @@ impl ControlCenterDaemon {
 
     async fn set_throttle_thermal_policy(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         policy: u32,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.sysfs
             .set_throttle_thermal_policy(policy)
@@ -63,14 +84,11 @@ impl ControlCenterDaemon {
 
     async fn set_platform_profile(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         profile: String,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.sysfs
             .set_platform_profile(&profile)
@@ -86,14 +104,11 @@ impl ControlCenterDaemon {
 
     async fn set_battery_limit(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         limit_pct: u32,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.sysfs
             .set_battery_limit(limit_pct)
@@ -109,14 +124,11 @@ impl ControlCenterDaemon {
 
     async fn set_cpu_epp(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         epp: String,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.sysfs
             .set_cpu_epp(&epp)
@@ -126,14 +138,11 @@ impl ControlCenterDaemon {
 
     async fn set_keyboard_brightness(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         brightness: u32,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.sysfs
             .set_keyboard_brightness(brightness)
@@ -143,18 +152,15 @@ impl ControlCenterDaemon {
 
     async fn set_keyboard_rgb(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         mode: u32,
         r: u8,
         g: u8,
         b: u8,
         speed: u32,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         self.hid
             .set_rgb(mode, r, g, b, speed)
@@ -164,17 +170,13 @@ impl ControlCenterDaemon {
 
     async fn set_gpu_mode(
         &self,
-        #[zbus(header)] _hdr: zbus::message::Header<'_>,
+        #[zbus(connection)] conn: &zbus::Connection,
+        #[zbus(header)] hdr: zbus::message::Header<'_>,
         mode: String,
     ) -> zbus::fdo::Result<()> {
-        let _ = self.polkit.check_authorization(
-            0,
-            0,
-            "org.tuf.controlcenter.set-hardware-settings",
-        ).map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings").await?;
 
         info!("Daemon processing GPU Mode switch request: {}", mode);
-        // Integrate with supergfxctl or runtime power-management
         Ok(())
     }
 

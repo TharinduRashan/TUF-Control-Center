@@ -64,6 +64,38 @@ impl DisplayPage {
         info_group.add(&panel_row);
         page.add(&info_group);
 
+        // Connect button and slider actions
+        {
+            let b60 = btn_60.clone();
+            let b144 = btn_144.clone();
+            btn_60.connect_clicked(move |_| {
+                b60.add_css_class("suggested-action");
+                b144.remove_css_class("suggested-action");
+                let _ = std::process::Command::new("xrandr")
+                    .args(["-r", "60"])
+                    .spawn();
+            });
+        }
+        {
+            let b60 = btn_60.clone();
+            let b144 = btn_144.clone();
+            btn_144.connect_clicked(move |_| {
+                b144.add_css_class("suggested-action");
+                b60.remove_css_class("suggested-action");
+                let _ = std::process::Command::new("xrandr")
+                    .args(["-r", "144"])
+                    .spawn();
+            });
+        }
+        {
+            scale.connect_value_changed(move |s| {
+                let pct = s.value() as u32;
+                let _ = std::process::Command::new("brightnessctl")
+                    .args(["set", &format!("{}%", pct)])
+                    .spawn();
+            });
+        }
+
         let container = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .child(&page)

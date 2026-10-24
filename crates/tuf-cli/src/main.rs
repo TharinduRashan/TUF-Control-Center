@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use tuf_core::models::{BatteryLimit, GpuMode, PerformanceMode, RgbColor, RgbMode, RgbSpeed};
-use tuf_core::{HardwareBackend, MockHardwareBackend};
+use tuf_core::{HardwareBackend, LinuxHardwareBackend, MockHardwareBackend};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -81,9 +81,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut mock = MockHardwareBackend::new();
         handle_command(cli.command, &mut mock).await?;
     } else {
-        // Try D-Bus connection or fallback to direct Linux backend
-        let mut mock = MockHardwareBackend::new();
-        handle_command(cli.command, &mut mock).await?;
+        let mut backend = LinuxHardwareBackend::new();
+        handle_command(cli.command, &mut backend).await?;
     }
 
     Ok(())

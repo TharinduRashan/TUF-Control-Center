@@ -1,6 +1,8 @@
+use gtk4::prelude::*;
 use gtk4::{Button, Orientation, Scale, ScrolledWindow, Switch};
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use tuf_core::models::{BatteryLimit, PerformanceMode, RgbConfig};
 use tuf_core::AppConfig;
 use crate::app::BackendHandle;
 
@@ -10,7 +12,7 @@ pub struct SettingsPage {
 }
 
 impl SettingsPage {
-    pub fn new(_backend: BackendHandle) -> Self {
+    pub fn new(backend: BackendHandle) -> Self {
         let page = PreferencesPage::new();
 
         let app_group = PreferencesGroup::builder()
@@ -23,6 +25,12 @@ impl SettingsPage {
             .subtitle("Launch in background tray on desktop login")
             .build();
         let start_min_switch = Switch::builder().active(false).build();
+        start_min_switch.connect_state_set(move |_, state| {
+            let mut cfg = AppConfig::load_or_default();
+            cfg.start_minimized = state;
+            let _ = cfg.save_to_path(AppConfig::default_path());
+            gtk4::glib::Propagation::Proceed
+        });
         start_min_row.add_suffix(&start_min_switch);
         app_group.add(&start_min_row);
 
@@ -31,6 +39,12 @@ impl SettingsPage {
             .subtitle("Display AppIndicator menu icon in GNOME top bar")
             .build();
         let tray_switch = Switch::builder().active(true).build();
+        tray_switch.connect_state_set(move |_, state| {
+            let mut cfg = AppConfig::load_or_default();
+            cfg.tray_icon = state;
+            let _ = cfg.save_to_path(AppConfig::default_path());
+            gtk4::glib::Propagation::Proceed
+        });
         tray_row.add_suffix(&tray_switch);
         app_group.add(&tray_row);
 
@@ -42,6 +56,11 @@ impl SettingsPage {
         poll_scale.set_value(1000.0);
         poll_scale.set_width_request(180);
         poll_scale.set_draw_value(true);
+        poll_scale.connect_value_changed(move |s| {
+            let mut cfg = AppConfig::load_or_default();
+            cfg.polling_interval_ms = s.value() as u64;
+            let _ = cfg.save_to_path(AppConfig::default_path());
+        });
         poll_row.add_suffix(&poll_scale);
         app_group.add(&poll_row);
 
@@ -64,6 +83,18 @@ impl SettingsPage {
             .build();
         let btn_reset = Button::with_label("Reset Defaults");
         btn_reset.add_css_class("destructive-action");
+        {
+            let b = backend.clone();
+            btn_reset.connect_clicked(move |_| {
+                let def = AppConfig::default();
+                let _ = def.save_to_path(AppConfig::default_path());
+                if let Ok(mut lock) = b.lock() {
+                    let _ = lock.set_performance_mode(PerformanceMode::Balanced);
+                    let _ = lock.set_battery_limit(BatteryLimit::Balanced);
+                    let _ = lock.set_keyboard_rgb(&RgbConfig::default());
+                }
+            });
+        }
         reset_row.add_suffix(&btn_reset);
         config_group.add(&reset_row);
 

@@ -10,9 +10,12 @@ use crate::models::{
 pub struct LinuxTelemetryReader {
     last_cpu_idle: u64,
     last_cpu_total: u64,
+    cpu_name: String,
     k10temp_path: Option<PathBuf>,
     asus_hwmon_path: Option<PathBuf>,
     battery_path: Option<PathBuf>,
+    ac_online_path: Option<PathBuf>,
+    nvidia_hwmon_temp_path: Option<PathBuf>,
 }
 
 impl Default for LinuxTelemetryReader {
@@ -26,9 +29,12 @@ impl LinuxTelemetryReader {
         let mut reader = Self {
             last_cpu_idle: 0,
             last_cpu_total: 0,
+            cpu_name: read_cpu_model_name(),
             k10temp_path: None,
             asus_hwmon_path: None,
             battery_path: None,
+            ac_online_path: None,
+            nvidia_hwmon_temp_path: None,
         };
         reader.discover_paths();
         let (idle, total) = read_cpu_ticks().unwrap_or((0, 0));
@@ -38,7 +44,7 @@ impl LinuxTelemetryReader {
     }
 
     fn discover_paths(&mut self) {
-        // Find k10temp or CPU temp sensor in /sys/class/hwmon
+        // Find CPU temp sensor (k10temp, zenpower, coretemp) and nvidia hwmon in /sys/class/hwmon
         if let Ok(entries) = fs::read_dir("/sys/class/hwmon") {
             for entry in entries.flatten() {
                 let p = entry.path();
@@ -46,7 +52,8 @@ impl LinuxTelemetryReader {
                     let n = name.trim();
                     if n == "k10temp" || n == "zenpower" || n == "coretemp" {
                         self.k10temp_path = Some(p.join("temp1_input"));
-                        break;
+                    } else if n == "nvidia" || n.starts_with("nvidia") {
+                        self.nvidia_hwmon_temp_path = Some(p.join("temp1_input"));
                     }
                 }
             }
@@ -64,7 +71,7 @@ impl LinuxTelemetryReader {
             }
         }
 
-        // Find BAT0 or BAT1
+        // Find BAT0 or BAT1 or BATT
         for bat_name in &["BAT0", "BAT1", "BATT"] {
             let p = Path::new("/sys/class/power_supply").join(bat_name);
             if p.exists() {
@@ -72,6 +79,9 @@ impl LinuxTelemetryReader {
                 break;
             }
         }
+
+        // Find AC adapter online file
+        self.ac_online_path = discover_ac_path();
     }
 
     pub fn read_system_telemetry(
@@ -135,7 +145,7 @@ impl LinuxTelemetryReader {
             .unwrap_or(3300.0);
 
         Ok(CpuTelemetry {
-            name: "AMD Ryzen 5 7535HS".into(),
+            name: self.cpu_name.clone(),
             temp_c,
             usage_pct: usage_pct.clamp(0.0, 100.0),
             freq_mhz,
@@ -163,11 +173,17 @@ impl LinuxTelemetryReader {
             };
         }
 
-        // Active state
+        // Active state: Read real temp if nvidia hwmon is available
+        let temp_c = self.nvidia_hwmon_temp_path.as_ref()
+            .and_then(|p| fs::read_to_string(p).ok())
+            .and_then(|s| s.trim().parse::<f32>().ok())
+            .map(|raw| raw / 1000.0)
+            .or(Some(48.0));
+
         GpuTelemetry {
             name: "NVIDIA GeForce RTX 3050 Laptop GPU".into(),
             is_active: true,
-            temp_c: Some(48.0),
+            temp_c,
             usage_pct: Some(5.0),
             power_w: Some(15.0),
             vram_used_mb: Some(384),
@@ -262,18 +278,33 @@ impl LinuxTelemetryReader {
                 .ok()
                 .and_then(|s| s.trim().parse().ok());
 
-            // AC status
-            let ac_connected = Path::new("/sys/class/power_supply/AC0/online")
-                .exists()
-                && fs::read_to_string("/sys/class/power_supply/AC0/online")
-                    .map(|s| s.trim() == "1")
-                    .unwrap_or(true);
+            // Dynamic battery health calculation
+            let health_pct = {
+                let full = fs::read_to_string(bat.join("energy_full"))
+                    .or_else(|_| fs::read_to_string(bat.join("charge_full")))
+                    .ok()
+                    .and_then(|s| s.trim().parse::<f64>().ok());
+                let design = fs::read_to_string(bat.join("energy_full_design"))
+                    .or_else(|_| fs::read_to_string(bat.join("charge_full_design")))
+                    .ok()
+                    .and_then(|s| s.trim().parse::<f64>().ok());
+                match (full, design) {
+                    (Some(f), Some(d)) if d > 0.0 => Some(((f / d) * 100.0).clamp(0.0, 100.0) as f32),
+                    _ => Some(100.0),
+                }
+            };
+
+            // AC status via detected AC supply online node
+            let ac_connected = self.ac_online_path.as_ref()
+                .and_then(|p| fs::read_to_string(p).ok())
+                .map(|s| s.trim() == "1")
+                .unwrap_or(true);
 
             Ok(BatteryTelemetry {
                 percentage: capacity,
                 state,
                 power_w,
-                health_pct: Some(98.5),
+                health_pct,
                 cycle_count,
                 current_limit: limit_threshold,
                 ac_connected,
@@ -291,6 +322,48 @@ impl LinuxTelemetryReader {
             })
         }
     }
+}
+
+fn read_cpu_model_name() -> String {
+    if let Ok(content) = fs::read_to_string("/proc/cpuinfo") {
+        for line in content.lines() {
+            if line.starts_with("model name") {
+                if let Some(name) = line.split(':').nth(1) {
+                    let cleaned = name.trim();
+                    if !cleaned.is_empty() {
+                        return cleaned.to_string();
+                    }
+                }
+            }
+        }
+    }
+    "AMD Ryzen 5 7535HS".to_string()
+}
+
+fn discover_ac_path() -> Option<PathBuf> {
+    let power_supply = Path::new("/sys/class/power_supply");
+    // Priority candidates
+    for name in &["AC", "ACAD", "ADP1", "AC0", "ADP0"] {
+        let p = power_supply.join(name).join("online");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+    // General scan
+    if let Ok(entries) = fs::read_dir(power_supply) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if let Ok(ty) = fs::read_to_string(p.join("type")) {
+                if ty.trim().eq_ignore_ascii_case("mains") {
+                    let online = p.join("online");
+                    if online.exists() {
+                        return Some(online);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn read_cpu_ticks() -> Result<(u64, u64), HardwareError> {

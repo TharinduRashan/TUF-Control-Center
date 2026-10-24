@@ -3,7 +3,7 @@ use std::time::Duration;
 use gtk4::prelude::*;
 use tracing::info;
 
-use tuf_core::{HardwareBackend, MockHardwareBackend};
+use tuf_core::{HardwareBackend, LinuxHardwareBackend, MockHardwareBackend};
 use crate::window::MainWindow;
 
 pub type BackendHandle = Arc<Mutex<std::boxed::Box<dyn HardwareBackend>>>;
@@ -20,8 +20,11 @@ impl TufApplication {
             .application_id("org.tuf.ControlCenter")
             .build();
 
-        let backend: BackendHandle =
-            Arc::new(Mutex::new(std::boxed::Box::new(MockHardwareBackend::new())));
+        let backend: BackendHandle = if simulate {
+            Arc::new(Mutex::new(std::boxed::Box::new(MockHardwareBackend::new())))
+        } else {
+            Arc::new(Mutex::new(std::boxed::Box::new(LinuxHardwareBackend::new())))
+        };
 
         Self {
             app,
@@ -41,17 +44,36 @@ impl TufApplication {
 
             let win_ref = Arc::new(main_win);
 
-            // Periodic telemetry polling on GTK main context
-            let b = backend.clone();
-            let w = win_ref.clone();
+            // Asynchronous background telemetry polling worker via async-channel
+            let (sender, receiver) = async_channel::bounded::<tuf_core::models::SystemTelemetry>(4);
 
-            glib::timeout_add_local(Duration::from_millis(1000), move || {
-                if let Ok(mut lock) = b.lock() {
-                    if let Ok(telemetry) = lock.read_telemetry() {
-                        w.update_telemetry(&telemetry);
+            let w = win_ref.clone();
+            glib::spawn_future_local(async move {
+                while let Ok(telemetry) = receiver.recv().await {
+                    w.update_telemetry(&telemetry);
+                }
+            });
+
+            // Trigger immediate initial read
+            let b_init = backend.clone();
+            if let Ok(mut lock) = b_init.lock() {
+                if let Ok(initial_telemetry) = lock.read_telemetry() {
+                    win_ref.update_telemetry(&initial_telemetry);
+                }
+            }
+
+            let b = backend.clone();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(Duration::from_millis(1000));
+                    if let Ok(mut lock) = b.lock() {
+                        if let Ok(telemetry) = lock.read_telemetry() {
+                            if sender.send_blocking(telemetry).is_err() {
+                                break; // Window closed or app exiting
+                            }
+                        }
                     }
                 }
-                glib::ControlFlow::Continue
             });
         });
 

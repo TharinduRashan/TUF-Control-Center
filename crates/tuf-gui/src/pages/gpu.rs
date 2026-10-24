@@ -2,12 +2,15 @@ use gtk4::prelude::*;
 use gtk4::{Button, Label, ScrolledWindow};
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
-use tuf_core::models::GpuMode;
+use tuf_core::models::{GpuMode, SystemTelemetry};
 use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct GpuPage {
     pub container: ScrolledWindow,
+    btn_hybrid: Button,
+    btn_eco: Button,
+    dgpu_row: ActionRow,
 }
 
 impl GpuPage {
@@ -96,6 +99,32 @@ impl GpuPage {
             .child(&page)
             .build();
 
-        Self { container }
+        Self {
+            container,
+            btn_hybrid,
+            btn_eco,
+            dgpu_row,
+        }
+    }
+
+    pub fn update_telemetry(&self, telemetry: &SystemTelemetry) {
+        if telemetry.gpu.is_active {
+            let temp = telemetry.gpu.temp_c.unwrap_or(0.0);
+            let pwr = telemetry.gpu.power_w.unwrap_or(0.0);
+            self.dgpu_row.set_subtitle(&format!(
+                "NVIDIA GeForce RTX 3050 (Active) — {:.1}°C | {:.1}W",
+                temp, pwr
+            ));
+        } else {
+            self.dgpu_row.set_subtitle("NVIDIA GeForce RTX 3050 — Suspended in RTD3 (0W)");
+        }
+
+        if telemetry.active_gpu_mode == GpuMode::Hybrid {
+            self.btn_hybrid.add_css_class("suggested-action");
+            self.btn_eco.remove_css_class("suggested-action");
+        } else {
+            self.btn_hybrid.remove_css_class("suggested-action");
+            self.btn_eco.add_css_class("suggested-action");
+        }
     }
 }
