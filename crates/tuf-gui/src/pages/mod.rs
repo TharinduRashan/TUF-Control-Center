@@ -1,0 +1,21 @@
+pub mod battery;
+pub mod dashboard;
+pub mod diagnostics;
+pub mod display;
+pub mod fans;
+pub mod gpu;
+pub mod lighting;
+pub mod performance;
+pub mod settings;
+pub mod system;
+
+pub use battery::BatteryPage;
+pub use dashboard::DashboardPage;
+pub use diagnostics::DiagnosticsPage;
+pub use display::DisplayPage;
+pub use fans::FansPage;
+pub use gpu::GpuPage;
+pub use lighting::LightingPage;
+pub use performance::PerformancePage;
+pub use settings::SettingsPage;
+pub use system::SystemPage;

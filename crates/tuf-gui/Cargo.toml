@@ -1,0 +1,23 @@
+[package]
+name = "tuf-gui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Native GTK4/Libadwaita user interface for TUF Control Center"
+
+[[bin]]
+name = "tuf-control-center"
+path = "src/main.rs"
+
+[dependencies]
+tuf-core = { path = "../tuf-core" }
+gtk4 = "0.9"
+libadwaita = "0.7"
+glib = "0.20"
+gio = "0.20"
+tokio = { version = "1.38", features = ["rt-multi-thread", "macros", "time"] }
+async-channel = "2.3"
+zbus = "5.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.5", features = ["derive", "env"] }

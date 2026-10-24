@@ -1,0 +1,26 @@
+[Desktop Entry]
+Name=TUF Control Center
+Comment=G-Helper clone for ASUS TUF and ROG gaming laptops on Linux
+GenericName=Laptop Control Center
+Exec=tuf-control-center
+Icon=tuf-control-center
+Terminal=false
+Type=Application
+Categories=Settings;HardwareSettings;System;GTK;
+Keywords=ASUS;TUF;ROG;G-Helper;Fan;RGB;Battery;GPU;Optimus;Power;
+StartupNotify=true
+StartupWMClass=tuf-control-center
+X-GNOME-UsesNotifications=true
+Actions=Silent;Balanced;Turbo;
+
+[Desktop Action Silent]
+Name=Silent Profile
+Exec=tuf-cli profile silent
+
+[Desktop Action Balanced]
+Name=Balanced Profile
+Exec=tuf-cli profile balanced
+
+[Desktop Action Turbo]
+Name=Turbo Profile
+Exec=tuf-cli profile turbo

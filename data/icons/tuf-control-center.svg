@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e24" />
+      <stop offset="100%" stop-color="#121214" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff7a00" />
+      <stop offset="100%" stop-color="#ff4500" />
+    </linearGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a4a55" />
+      <stop offset="100%" stop-color="#2a2a32" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded App Background -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bgGrad)" stroke="#33333d" stroke-width="2" />
+
+  <!-- Outer TUF Wings Shield Geometry -->
+  <path d="M 64 24 L 98 42 L 98 74 L 64 104 L 30 74 L 30 42 Z" fill="none" stroke="url(#metalGrad)" stroke-width="5" stroke-linejoin="round" />
+
+  <!-- TUF Mecha Chevron Wing Left -->
+  <polygon points="38,48 56,48 46,74 38,68" fill="url(#accentGrad)" />
+  <!-- TUF Mecha Chevron Wing Right -->
+  <polygon points="90,48 72,48 82,74 90,68" fill="url(#accentGrad)" />
+
+  <!-- Center Hex Core / Flame Indicator -->
+  <polygon points="64,44 74,54 74,72 64,84 54,72 54,54" fill="#ffffff" opacity="0.9" />
+  <polygon points="64,50 70,57 70,69 64,77 58,69 58,57" fill="url(#accentGrad)" />
+
+  <!-- Subtly angled tech accents -->
+  <rect x="62" y="88" width="4" height="10" rx="1" fill="#ff7a00" />
+  <circle cx="64" cy="34" r="2.5" fill="#ff7a00" />
+</svg>

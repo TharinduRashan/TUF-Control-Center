@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/tuf-core",
+    "crates/tuf-daemon",
+    "crates/tuf-cli",
+    "crates/tuf-gui",
+]
+resolver = "2"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+authors = ["TUF Control Center Contributors"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/tuf-control-center/tuf-control-center"
+description = "A Linux-native G-Helper clone for ASUS TUF and ROG gaming laptops"

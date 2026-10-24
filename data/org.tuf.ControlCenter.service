@@ -1,0 +1,25 @@
+[Unit]
+Description=TUF Control Center Privileged Hardware Daemon
+Documentation=https://github.com/tuf-control-center/tuf-control-center
+After=dbus.service systemd-udevd.service
+Wants=dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tuf-daemon
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+# Security Sandboxing & Hardening
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/sys/devices/platform/asus-nb-wmi /sys/firmware/acpi /sys/class/power_supply /sys/class/leds /sys/devices/system/cpu /dev
+ProtectKernelLogs=true
+ProtectKernelModules=false
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_RAWIO
+AmbientCapabilities=CAP_SYS_ADMIN CAP_SYS_RAWIO
+
+[Install]
+WantedBy=multi-user.target

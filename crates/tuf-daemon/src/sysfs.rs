@@ -1,0 +1,198 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+use tracing::{info, warn};
+use tuf_core::error::HardwareError;
+
+pub struct SysfsController {
+    thermal_policy_path: PathBuf,
+    platform_profile_path: PathBuf,
+    battery_limit_path: Option<PathBuf>,
+    kbd_brightness_path: Option<PathBuf>,
+    simulation: bool,
+}
+
+impl Default for SysfsController {
+    fn default() -> Self {
+        Self::new(false)
+    }
+}
+
+impl SysfsController {
+    pub fn new(simulation: bool) -> Self {
+        let thermal_policy_path = PathBuf::from("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy");
+        let platform_profile_path = PathBuf::from("/sys/firmware/acpi/platform_profile");
+
+        let mut battery_limit_path = None;
+        for bat in &["BAT0", "BAT1", "BATT"] {
+            let p = Path::new("/sys/class/power_supply").join(bat).join("charge_control_end_threshold");
+            if p.exists() {
+                battery_limit_path = Some(p);
+                break;
+            }
+        }
+
+        let kbd_brightness_path = {
+            let p = PathBuf::from("/sys/class/leds/asus::kbd_backlight/brightness");
+            if p.exists() { Some(p) } else { None }
+        };
+
+        Self {
+            thermal_policy_path,
+            platform_profile_path,
+            battery_limit_path,
+            kbd_brightness_path,
+            simulation,
+        }
+    }
+
+    pub fn set_throttle_thermal_policy(&self, policy: u32) -> Result<(), HardwareError> {
+        if policy > 2 {
+            return Err(HardwareError::InvalidValue(format!(
+                "Invalid thermal policy code: {policy}. Must be 0 (Balanced), 1 (Turbo), or 2 (Silent)"
+            )));
+        }
+
+        if self.simulation || !self.thermal_policy_path.exists() {
+            info!("[SYSFS SIM] Written thermal policy: {}", policy);
+            return Ok(());
+        }
+
+        fs::write(&self.thermal_policy_path, policy.to_string())
+            .map_err(|e| HardwareError::PermissionDenied(format!("Failed to write thermal policy: {e}")))?;
+        
+        info!("Applied throttle_thermal_policy = {}", policy);
+        Ok(())
+    }
+
+    pub fn get_throttle_thermal_policy(&self) -> Result<u32, HardwareError> {
+        if self.simulation || !self.thermal_policy_path.exists() {
+            return Ok(0); // Balanced default in simulation
+        }
+
+        let raw = fs::read_to_string(&self.thermal_policy_path)
+            .map_err(|e| HardwareError::Io(format!("Failed to read thermal policy: {e}")))?;
+        raw.trim().parse::<u32>()
+            .map_err(|e| HardwareError::Parse(format!("Failed to parse thermal policy: {e}")))
+    }
+
+    pub fn set_platform_profile(&self, profile: &str) -> Result<(), HardwareError> {
+        let valid_profiles = ["quiet", "balanced", "performance"];
+        if !valid_profiles.contains(&profile) {
+            return Err(HardwareError::InvalidValue(format!(
+                "Invalid platform profile: '{profile}'. Must be quiet, balanced, or performance."
+            )));
+        }
+
+        if self.simulation || !self.platform_profile_path.exists() {
+            info!("[SYSFS SIM] Written platform profile: {}", profile);
+            return Ok(());
+        }
+
+        fs::write(&self.platform_profile_path, profile)
+            .map_err(|e| HardwareError::PermissionDenied(format!("Failed to write platform profile: {e}")))?;
+        
+        info!("Applied platform_profile = {}", profile);
+        Ok(())
+    }
+
+    pub fn get_platform_profile(&self) -> Result<String, HardwareError> {
+        if self.simulation || !self.platform_profile_path.exists() {
+            return Ok("balanced".into());
+        }
+
+        let raw = fs::read_to_string(&self.platform_profile_path)
+            .map_err(|e| HardwareError::Io(format!("Failed to read platform profile: {e}")))?;
+        Ok(raw.trim().to_string())
+    }
+
+    pub fn set_battery_limit(&self, limit_pct: u32) -> Result<(), HardwareError> {
+        if limit_pct != 60 && limit_pct != 80 && limit_pct != 100 {
+            return Err(HardwareError::InvalidValue(format!(
+                "Invalid charge limit: {limit_pct}%. Only 60, 80, or 100 are permitted."
+            )));
+        }
+
+        if let Some(path) = &self.battery_limit_path {
+            if self.simulation {
+                info!("[SYSFS SIM] Written battery limit: {}%", limit_pct);
+                return Ok(());
+            }
+
+            fs::write(path, limit_pct.to_string())
+                .map_err(|e| HardwareError::PermissionDenied(format!("Failed to write charge limit: {e}")))?;
+            
+            info!("Applied battery charge_control_end_threshold = {}%", limit_pct);
+            Ok(())
+        } else if self.simulation {
+            info!("[SYSFS SIM] Emulated battery limit set to {}%", limit_pct);
+            Ok(())
+        } else {
+            Err(HardwareError::Unsupported("Battery charge limit is unsupported on this hardware".into()))
+        }
+    }
+
+    pub fn get_battery_limit(&self) -> Result<u32, HardwareError> {
+        if let Some(path) = &self.battery_limit_path {
+            if self.simulation {
+                return Ok(80);
+            }
+            let raw = fs::read_to_string(path)
+                .map_err(|e| HardwareError::Io(format!("Failed to read battery limit: {e}")))?;
+            raw.trim().parse::<u32>()
+                .map_err(|e| HardwareError::Parse(format!("Failed to parse battery limit: {e}")))
+        } else {
+            Ok(100)
+        }
+    }
+
+    pub fn set_cpu_epp(&self, epp: &str) -> Result<(), HardwareError> {
+        let valid = ["power", "balance_power", "balance_performance", "performance"];
+        if !valid.contains(&epp) {
+            return Err(HardwareError::InvalidValue(format!("Invalid CPU EPP value: {epp}")));
+        }
+
+        if self.simulation {
+            info!("[SYSFS SIM] Written CPU EPP: {}", epp);
+            return Ok(());
+        }
+
+        let policy_dir = Path::new("/sys/devices/system/cpu/cpufreq");
+        if let Ok(entries) = fs::read_dir(policy_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path().join("energy_performance_preference");
+                if p.exists() {
+                    let _ = fs::write(p, epp);
+                }
+            }
+            info!("Applied CPU energy_performance_preference = {}", epp);
+        }
+
+        Ok(())
+    }
+
+    pub fn set_keyboard_brightness(&self, level: u32) -> Result<(), HardwareError> {
+        if level > 3 {
+            return Err(HardwareError::InvalidValue(format!(
+                "Invalid keyboard brightness: {level}. Must be 0 to 3."
+            )));
+        }
+
+        if let Some(path) = &self.kbd_brightness_path {
+            if self.simulation {
+                info!("[SYSFS SIM] Written keyboard brightness: {}", level);
+                return Ok(());
+            }
+
+            fs::write(path, level.to_string())
+                .map_err(|e| HardwareError::PermissionDenied(format!("Failed to write kbd brightness: {e}")))?;
+            info!("Applied keyboard backlight brightness = {}", level);
+            Ok(())
+        } else if self.simulation {
+            info!("[SYSFS SIM] Emulated keyboard brightness = {}", level);
+            Ok(())
+        } else {
+            warn!("Keyboard backlight sysfs path not found");
+            Ok(())
+        }
+    }
+}
