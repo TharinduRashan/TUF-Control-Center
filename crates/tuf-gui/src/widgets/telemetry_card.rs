@@ -57,8 +57,20 @@ impl TelemetryCard {
     }
 
     pub fn update(&self, value: &str, sub: &str, fraction: f64) {
+        self.update_with_status(value, sub, fraction, None);
+    }
+
+    pub fn update_with_status(&self, value: &str, sub: &str, fraction: f64, status_class: Option<&str>) {
         self.value_label.set_text(value);
         self.sub_label.set_text(sub);
         self.progress.set_fraction(fraction.clamp(0.0, 1.0));
+
+        self.value_label.remove_css_class("success");
+        self.value_label.remove_css_class("warning");
+        self.value_label.remove_css_class("error");
+
+        if let Some(cls) = status_class {
+            self.value_label.add_css_class(cls);
+        }
     }
 }

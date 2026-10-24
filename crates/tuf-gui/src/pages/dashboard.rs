@@ -200,26 +200,42 @@ impl DashboardPage {
             telemetry.cpu.freq_mhz,
             telemetry.cpu.power_w.map(|w| format!("  |  {:.1}W", w)).unwrap_or_default()
         );
-        self.cpu_card.update(&cpu_val, &cpu_sub, (telemetry.cpu.usage_pct / 100.0) as f64);
+        let cpu_status = if telemetry.cpu.temp_c >= 85.0 {
+            Some("error")
+        } else if telemetry.cpu.temp_c >= 70.0 {
+            Some("warning")
+        } else {
+            Some("success")
+        };
+        self.cpu_card.update_with_status(&cpu_val, &cpu_sub, (telemetry.cpu.usage_pct / 100.0) as f64, cpu_status);
 
         // GPU Card
-        let (gpu_val, gpu_sub, gpu_frac) = if telemetry.gpu.is_active {
+        let (gpu_val, gpu_sub, gpu_frac, gpu_status) = if telemetry.gpu.is_active {
             let temp = telemetry.gpu.temp_c.unwrap_or(0.0);
             let load = telemetry.gpu.usage_pct.unwrap_or(0.0);
             let power = telemetry.gpu.power_w.unwrap_or(0.0);
+            let status = if temp >= 80.0 {
+                Some("error")
+            } else if temp >= 70.0 {
+                Some("warning")
+            } else {
+                Some("success")
+            };
             (
                 format!("{:.1}°C", temp),
                 format!("{:.1}% Load  |  {:.1}W  |  RTD3 Active", load, power),
                 (load / 100.0) as f64,
+                status,
             )
         } else {
             (
                 "Suspended (0W)".into(),
                 "PCI Runtime D3cold  |  Sleeping".into(),
                 0.0,
+                None,
             )
         };
-        self.gpu_card.update(&gpu_val, &gpu_sub, gpu_frac);
+        self.gpu_card.update_with_status(&gpu_val, &gpu_sub, gpu_frac, gpu_status);
 
         // Memory Card
         let mem_val = format!("{} / {} MB", telemetry.memory.used_mb, telemetry.memory.total_mb);
