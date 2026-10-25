@@ -33,20 +33,19 @@ impl ControlCenterDaemon {
         hdr: &zbus::message::Header<'_>,
         action_id: &str,
     ) -> zbus::fdo::Result<()> {
-        let (uid, pid) = if let Some(sender) = hdr.sender() {
+        let (sender_name, uid) = if let Some(sender) = hdr.sender() {
             if let Ok(dbus_proxy) = zbus::fdo::DBusProxy::new(conn).await {
                 let bus_name: zbus::names::BusName<'_> = sender.clone().into();
-                let uid = dbus_proxy.get_connection_unix_user(bus_name.clone()).await.unwrap_or(1000);
-                let pid = dbus_proxy.get_connection_unix_process_id(bus_name).await.unwrap_or(0);
-                (uid, pid)
+                let uid = dbus_proxy.get_connection_unix_user(bus_name).await.unwrap_or(1000);
+                (sender.as_str().to_string(), uid)
             } else {
-                (1000, 0)
+                (sender.as_str().to_string(), 1000)
             }
         } else {
-            (1000, 0)
+            (String::new(), 1000)
         };
 
-        self.polkit.check_authorization(pid, uid, action_id)
+        self.polkit.check_authorization(&sender_name, uid, action_id)
             .map_err(|e| zbus::fdo::Error::AuthFailed(e.to_string()))?;
         Ok(())
     }

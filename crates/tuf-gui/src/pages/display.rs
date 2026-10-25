@@ -71,9 +71,7 @@ impl DisplayPage {
             btn_60.connect_clicked(move |_| {
                 b60.add_css_class("suggested-action");
                 b144.remove_css_class("suggested-action");
-                let _ = std::process::Command::new("xrandr")
-                    .args(["-r", "60"])
-                    .spawn();
+                apply_refresh_rate(60);
             });
         }
         {
@@ -82,9 +80,7 @@ impl DisplayPage {
             btn_144.connect_clicked(move |_| {
                 b144.add_css_class("suggested-action");
                 b60.remove_css_class("suggested-action");
-                let _ = std::process::Command::new("xrandr")
-                    .args(["-r", "144"])
-                    .spawn();
+                apply_refresh_rate(144);
             });
         }
         {
@@ -103,4 +99,21 @@ impl DisplayPage {
 
         Self { container }
     }
+}
+
+fn apply_refresh_rate(rate: u32) {
+    let rate_str = rate.to_string();
+    let _ = std::process::Command::new("gnome-randr")
+        .args(["modify", "--rate", &rate_str])
+        .spawn()
+        .or_else(|_| {
+            std::process::Command::new("wlr-randr")
+                .args(["--output", "eDP-1", "--mode", &format!("1920x1080@{}Hz", rate)])
+                .spawn()
+        })
+        .or_else(|_| {
+            std::process::Command::new("xrandr")
+                .args(["-r", &rate_str])
+                .spawn()
+        });
 }

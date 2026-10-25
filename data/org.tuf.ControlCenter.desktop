@@ -9,7 +9,7 @@ Type=Application
 Categories=Settings;HardwareSettings;System;GTK;
 Keywords=ASUS;TUF;ROG;G-Helper;Fan;RGB;Battery;GPU;Optimus;Power;
 StartupNotify=true
-StartupWMClass=tuf-control-center
+StartupWMClass=org.tuf.ControlCenter
 X-GNOME-UsesNotifications=true
 Actions=Silent;Balanced;Turbo;
 

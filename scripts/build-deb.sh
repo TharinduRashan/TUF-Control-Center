@@ -52,7 +52,7 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: TUF Control Center Contributors <https://github.com/tuf-control-center/tuf-control-center>
-Depends: libgtk-4-1 (>= 4.12), libadwaita-1-0 (>= 1.5), libdbus-1-3 (>= 1.14), polkitd | policykit-1, systemd
+Depends: libgtk-4-1 (>= 4.6), libadwaita-1-0 (>= 1.0), libdbus-1-3 (>= 1.12), polkitd | policykit-1, systemd
 Description: A Linux-native G-Helper clone for ASUS TUF and ROG gaming laptops
  TUF Control Center provides native hardware controls for ASUS gaming laptops,
  including operating profiles (Silent/Balanced/Turbo), dual-fan telemetry,

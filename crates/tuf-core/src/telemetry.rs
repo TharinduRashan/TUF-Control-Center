@@ -294,11 +294,15 @@ impl LinuxTelemetryReader {
                 }
             };
 
-            // AC status via detected AC supply online node
-            let ac_connected = self.ac_online_path.as_ref()
-                .and_then(|p| fs::read_to_string(p).ok())
-                .map(|s| s.trim() == "1")
-                .unwrap_or(true);
+            // AC status via detected AC supply online node or discharging state
+            let ac_connected = if let Some(p) = &self.ac_online_path {
+                fs::read_to_string(p)
+                    .ok()
+                    .map(|s| s.trim() == "1")
+                    .unwrap_or_else(|| state != BatteryState::Discharging)
+            } else {
+                state != BatteryState::Discharging
+            };
 
             Ok(BatteryTelemetry {
                 percentage: capacity,

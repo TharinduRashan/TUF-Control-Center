@@ -15,7 +15,7 @@ StandardError=journal
 # Security Sandboxing & Hardening
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/sys/devices/platform/asus-nb-wmi /sys/firmware/acpi /sys/class/power_supply /sys/class/leds /sys/devices/system/cpu /dev
+ReadWritePaths=-/sys/devices/platform/asus-nb-wmi -/sys/firmware/acpi -/sys/class/power_supply -/sys/class/leds -/sys/devices/system/cpu -/dev
 ProtectKernelLogs=true
 ProtectKernelModules=false
 CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SYS_RAWIO
