@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build & Test (Ubuntu Linux)
@@ -47,10 +50,27 @@ jobs:
           name: tuf-control-center-deb
           path: dist/*.deb
 
-      - name: Release Asset
+      - name: Publish GitHub Release (On Version Tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.deb
+          name: "TUF Control Center ${{ github.ref_name }}"
+          body: "Official Linux-native G-Helper clone for ASUS TUF & ROG laptops. Download the `.deb` file below and double-click or run `sudo dpkg -i` to install."
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-Update Latest Release (On Push to Main)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.deb
+          tag_name: "v1.0.0"
+          name: "TUF Control Center v1.0.0 (Latest)"
+          body: "Continuous build of TUF Control Center for Ubuntu Linux. Download `tuf-control-center_1.0.0_amd64.deb` below and double-click to install."
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
