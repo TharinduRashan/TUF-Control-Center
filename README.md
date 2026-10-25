@@ -21,6 +21,7 @@ TUF Control Center provides centralized hardware control over ASUS gaming laptop
 | **GPU Mode: Hybrid** | ✅ Supported | Linux PRIME offload / `supergfxctl` | Default dynamic power-saving |
 | **GPU Mode: Integrated**| ✅ Supported | Linux Runtime D3cold / `supergfxctl` | Powers off dGPU for maximum battery |
 | **GPU Mode: Dedicated** | ❌ Unsupported | Hardware Limitation | FA506NC lacks a hardware MUX switch |
+| **Custom Fan Curves**  | ❌ Unsupported | Firmware Limitation | FA506NC fan curves are managed by EC firmware |
 
 ---
 
@@ -28,13 +29,13 @@ TUF Control Center provides centralized hardware control over ASUS gaming laptop
 
 - **Native GTK4 + Libadwaita UI**: Lightweight, responsive desktop application matching GNOME design guidelines and dark/light themes.
 - **Hardware Telemetry**: Real-time CPU, GPU, memory, fan RPM, battery health, and power metrics polled efficiently with zero UI lag.
-- **Performance Profiles**: Instant switching between Silent, Balanced, Turbo, and Custom modes mapped directly to `asus-nb-wmi` thermal throttle policies, Linux ACPI platform profiles, and `power-profiles-daemon`.
-- **GPU Management**: Complete visibility and switching between Hybrid (Optimus/PRIME offloading) and Integrated (dGPU powered down for battery life) modes via `supergfxctl`.
+- **Performance Profiles**: Instant switching between Silent, Balanced, and Turbo modes mapped directly to `asus-nb-wmi` thermal throttle policies, Linux ACPI platform profiles, and `power-profiles-daemon`.
+- **GPU Management**: Complete visibility and switching between Hybrid (Optimus/PRIME offloading) and Integrated (dGPU powered down for battery life) modes via `supergfxctl` and Polkit administrative authorization.
 - **Battery Health Control**: Hardware charge thresholds (60%, 80%, 100%) applied directly via Linux ACPI power supply interfaces and persisted safely across reboots.
-- **Fan Monitoring & Thermal Curves**: Real-time dual-fan monitoring (CPU and GPU RPM) with fail-safe embedded controller fallback.
+- **Fan Telemetry & Monitoring**: Real-time dual-fan monitoring (CPU and GPU RPM) with embedded controller (EC) automatic firmware management.
 - **Keyboard RGB & Lighting**: Single-zone TUF keyboard backlight brightness and animation modes (Static, Breathing, Strobing, Color Cycle) via ASUS HID and sysfs.
 - **Display Configuration**: Quick refresh rate switching (60Hz / 144Hz) via Wayland & X11 display servers.
-- **Privileged Hardware Daemon**: Strict least-privilege D-Bus architecture utilizing PolicyKit (`pkcheck`) with fail-closed security for safe hardware control.
+- **Privileged Hardware Daemon**: Least-privilege D-Bus architecture utilizing PolicyKit (`pkcheck` with `--system-bus-name`) with fail-closed security for safe hardware control.
 - **Hardware Simulation Mode**: Built-in mock mode allowing full UI testing and development on any Linux machine or VM without ASUS hardware.
 
 ---
@@ -52,14 +53,29 @@ TUF Control Center provides centralized hardware control over ASUS gaming laptop
 
 ---
 
-## Quick Installation (Ubuntu 24.04 / 26.04)
+## Installation (Ubuntu 24.04 / 26.04)
 
-### Install via Debian Package (.deb)
-Download the latest release package from the [Releases](https://github.com/tuf-control-center/tuf-control-center/releases) page and install:
+### Option 1: Install Prebuilt Debian Package (.deb)
+Download the latest release package from the [Releases](https://github.com/TharinduRashan/TUF-Control-Center/releases) page:
 
 ```bash
 sudo apt update
 sudo apt install -y ./tuf-control-center_1.0.0_amd64.deb
+```
+
+### Option 2: Build From Source
+If a binary release is not yet available for your system, build the Debian package locally in two minutes:
+
+```bash
+# Install build dependencies
+sudo apt update
+sudo apt install -y build-essential curl pkg-config libgtk-4-dev libadwaita-1-dev libdbus-1-dev dpkg-dev
+
+# Build the .deb package
+./scripts/build-deb.sh
+
+# Install the generated package
+sudo apt install -y ./dist/tuf-control-center_1.0.0_amd64.deb
 ```
 
 The background service (`tuf-daemon.service`) will automatically start and enable itself. You can launch **TUF Control Center** from your application launcher or by running:
@@ -77,13 +93,19 @@ TUF Control Center includes a comprehensive command-line tool `tuf-cli`:
 # View real-time hardware status
 tuf-cli status
 
-# Set operating mode
-tuf-cli profile balanced # or silent, turbo
+# Set operating mode (silent, balanced, turbo)
+tuf-cli profile balanced
 
-# Set battery charge threshold
+# Set battery charge threshold (60, 80, 100)
 tuf-cli battery-limit 80
 
-# Configure RGB lighting
+# Switch GPU mode (hybrid, integrated)
+tuf-cli gpu hybrid
+
+# Set keyboard backlight brightness (0 to 3)
+tuf-cli brightness 2
+
+# Configure keyboard RGB lighting
 tuf-cli rgb --mode static --color "#FF8000" --speed normal
 ```
 
@@ -99,6 +121,8 @@ tuf-cli rgb --mode static --color "#FF8000" --speed normal
 - [Installation & Packaging](docs/INSTALLATION.md)
 - [Development Tasks (TODO)](TODO.md)
 - [Agent Guidance](AGENTS.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
 
 ---
 

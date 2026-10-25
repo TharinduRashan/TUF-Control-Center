@@ -184,7 +184,7 @@ impl ControlCenterDaemon {
         #[zbus(header)] hdr: zbus::message::Header<'_>,
         mode: String,
     ) -> zbus::fdo::Result<()> {
-        self.check_auth(conn, &hdr, "org.tuf.controlcenter.set-hardware-settings")
+        self.check_auth(conn, &hdr, "org.tuf.controlcenter.switch-gpu")
             .await?;
 
         let mode_lower = mode.trim().to_lowercase();

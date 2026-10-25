@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use tracing::info;
+use tracing::{info, warn};
 use tuf_core::error::HardwareError;
 
 pub struct SysfsController {
@@ -66,6 +66,16 @@ impl SysfsController {
             HardwareError::PermissionDenied(format!("Failed to write thermal policy: {e}"))
         })?;
 
+        // Read back after writing to confirm kernel acceptance
+        if let Ok(confirmed) = self.get_throttle_thermal_policy() {
+            if confirmed != policy {
+                warn!(
+                    "Kernel throttle_thermal_policy readback was {} (requested {})",
+                    confirmed, policy
+                );
+            }
+        }
+
         info!("Applied throttle_thermal_policy = {}", policy);
         Ok(())
     }
@@ -112,6 +122,16 @@ impl SysfsController {
         fs::write(&self.platform_profile_path, profile).map_err(|e| {
             HardwareError::PermissionDenied(format!("Failed to write platform profile: {e}"))
         })?;
+
+        // Read back after writing to confirm kernel acceptance
+        if let Ok(confirmed) = self.get_platform_profile() {
+            if confirmed != profile {
+                warn!(
+                    "Kernel platform_profile readback was '{}' (requested '{}')",
+                    confirmed, profile
+                );
+            }
+        }
 
         info!("Applied platform_profile = {}", profile);
         Ok(())

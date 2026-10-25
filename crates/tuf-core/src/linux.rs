@@ -91,10 +91,13 @@ impl HardwareBackend for LinuxHardwareBackend {
     fn set_performance_mode(&mut self, mode: PerformanceMode) -> Result<(), HardwareError> {
         info!("Applying hardware performance mode: {}", mode);
         let policy = mode.to_throttle_thermal_policy();
-        self.call_daemon("set_throttle_thermal_policy", &(policy,))?;
 
-        let profile = mode.to_platform_profile().to_string();
-        let _ = self.call_daemon("set_platform_profile", &(profile,));
+        // throttle_thermal_policy is the primary ASUS hardware control
+        if let Err(e) = self.call_daemon("set_throttle_thermal_policy", &(policy,)) {
+            warn!("asus-nb-wmi throttle_thermal_policy failed ({e}), falling back to ACPI platform_profile");
+            let profile = mode.to_platform_profile().to_string();
+            self.call_daemon("set_platform_profile", &(profile,))?;
+        }
 
         let epp = mode.to_epp().to_string();
         let _ = self.call_daemon("set_cpu_epp", &(epp,));

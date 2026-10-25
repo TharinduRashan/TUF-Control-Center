@@ -4,8 +4,9 @@
  "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
 <policyconfig>
   <vendor>TUF Control Center</vendor>
-  <vendor_url>https://github.com/tuf-control-center/tuf-control-center</vendor_url>
+  <vendor_url>https://github.com/TharinduRashan/TUF-Control-Center</vendor_url>
 
+  <!-- Non-disruptive hardware tweaks (profiles, battery threshold, keyboard lighting) -->
   <action id="org.tuf.controlcenter.set-hardware-settings">
     <description>Modify ASUS hardware settings</description>
     <message>Authentication is required to adjust hardware power, battery, and thermal profiles</message>
@@ -14,6 +15,18 @@
       <allow_any>auth_admin</allow_any>
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <!-- Disruptive hardware operations (GPU switching requires administrator auth) -->
+  <action id="org.tuf.controlcenter.switch-gpu">
+    <description>Switch graphics processing unit (GPU) mode</description>
+    <message>Authentication is required to switch GPU mode (Hybrid / Integrated)</message>
+    <icon_name>tuf-control-center</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
     </defaults>
   </action>
 </policyconfig>

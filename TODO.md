@@ -47,10 +47,10 @@
   - [x] Operating Mode selector (Silent, Balanced, Turbo).
   - [x] GPU mode selector with transition warnings and recovery path.
   - [x] Battery charge threshold selector (60%, 80%, 100%).
-  - [x] Fan status and curve viewer.
+  - [x] Fan status and telemetry viewer (firmware-managed acoustic curves on FA506NC).
   - [x] Display panel controls (144Hz / 60Hz toggle, brightness slider).
   - [x] Keyboard RGB controls (lighting mode, color picker, brightness).
-  - [x] System toggles: Touchpad, Mic Mute.
+  - [x] System session toggles: Touchpad (GNOME GSettings), Mic Mute (PipeWire).
   - [x] Application settings & diagnostics reporting.
 - [x] Integrate asynchronous telemetry background worker (adaptive polling).
 
