@@ -34,7 +34,9 @@ impl From<std::io::Error> for HardwareError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {
             std::io::ErrorKind::NotFound => HardwareError::NotFound(err.to_string()),
-            std::io::ErrorKind::PermissionDenied => HardwareError::PermissionDenied(err.to_string()),
+            std::io::ErrorKind::PermissionDenied => {
+                HardwareError::PermissionDenied(err.to_string())
+            }
             _ => HardwareError::Io(err.to_string()),
         }
     }

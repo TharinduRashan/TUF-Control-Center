@@ -1,9 +1,8 @@
-use gtk4::prelude::*;
-use gtk4::{Button, Label, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Button, Label, ScrolledWindow};
 use tuf_core::models::{BatteryLimit, SystemTelemetry};
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct BatteryPage {
@@ -143,7 +142,8 @@ impl BatteryPage {
         self.status_label.set_text(&status_text);
 
         if let Some(health) = telemetry.battery.health_pct {
-            self.health_label.set_text(&format!("{:.1}% (Optimal)", health));
+            self.health_label
+                .set_text(&format!("{:.1}% (Optimal)", health));
         } else {
             self.health_label.set_text("N/A (Virtual / AC Only)");
         }
@@ -162,8 +162,17 @@ impl BatteryPage {
                 btn.remove_css_class("suggested-action");
             }
         };
-        set_active(&self.btn_60, telemetry.battery.current_limit == BatteryLimit::MaximumLifespan);
-        set_active(&self.btn_80, telemetry.battery.current_limit == BatteryLimit::Balanced);
-        set_active(&self.btn_100, telemetry.battery.current_limit == BatteryLimit::Full);
+        set_active(
+            &self.btn_60,
+            telemetry.battery.current_limit == BatteryLimit::MaximumLifespan,
+        );
+        set_active(
+            &self.btn_80,
+            telemetry.battery.current_limit == BatteryLimit::Balanced,
+        );
+        set_active(
+            &self.btn_100,
+            telemetry.battery.current_limit == BatteryLimit::Full,
+        );
     }
 }

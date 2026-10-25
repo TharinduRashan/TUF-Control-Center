@@ -1,9 +1,8 @@
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Orientation, Scale, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Box as GtkBox, Button, Orientation, Scale, ScrolledWindow};
 use tuf_core::models::{RgbColor, RgbConfig, RgbMode, RgbSpeed};
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct LightingPage {
@@ -118,73 +117,171 @@ impl LightingPage {
         }
 
         // Helper to bind Mode buttons
-        let bind_mode = |btn: &Button, mode: RgbMode, group: Vec<Button>, b: BackendHandle, state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
-            let btn_clone = btn.clone();
-            btn.connect_clicked(move |_| {
-                for other in &group {
-                    other.remove_css_class("suggested-action");
-                }
-                btn_clone.add_css_class("suggested-action");
-                if let Ok(mut s) = state.lock() {
-                    s.mode = mode;
-                    if let Ok(mut lock) = b.lock() {
-                        let _ = lock.set_keyboard_rgb(&s);
+        let bind_mode =
+            |btn: &Button,
+             mode: RgbMode,
+             group: Vec<Button>,
+             b: BackendHandle,
+             state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
+                let btn_clone = btn.clone();
+                btn.connect_clicked(move |_| {
+                    for other in &group {
+                        other.remove_css_class("suggested-action");
                     }
-                }
-            });
-        };
+                    btn_clone.add_css_class("suggested-action");
+                    if let Ok(mut s) = state.lock() {
+                        s.mode = mode;
+                        if let Ok(mut lock) = b.lock() {
+                            let _ = lock.set_keyboard_rgb(&s);
+                        }
+                    }
+                });
+            };
 
-        let mode_buttons = vec![btn_static.clone(), btn_breathing.clone(), btn_strobing.clone(), btn_cycle.clone()];
-        bind_mode(&btn_static, RgbMode::Static, mode_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_mode(&btn_breathing, RgbMode::Breathing, mode_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_mode(&btn_strobing, RgbMode::Strobing, mode_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_mode(&btn_cycle, RgbMode::ColorCycle, mode_buttons, backend.clone(), current_rgb.clone());
+        let mode_buttons = vec![
+            btn_static.clone(),
+            btn_breathing.clone(),
+            btn_strobing.clone(),
+            btn_cycle.clone(),
+        ];
+        bind_mode(
+            &btn_static,
+            RgbMode::Static,
+            mode_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_mode(
+            &btn_breathing,
+            RgbMode::Breathing,
+            mode_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_mode(
+            &btn_strobing,
+            RgbMode::Strobing,
+            mode_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_mode(
+            &btn_cycle,
+            RgbMode::ColorCycle,
+            mode_buttons,
+            backend.clone(),
+            current_rgb.clone(),
+        );
 
         // Helper to bind Speed buttons
-        let bind_speed = |btn: &Button, speed: RgbSpeed, group: Vec<Button>, b: BackendHandle, state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
-            let btn_clone = btn.clone();
-            btn.connect_clicked(move |_| {
-                for other in &group {
-                    other.remove_css_class("suggested-action");
-                }
-                btn_clone.add_css_class("suggested-action");
-                if let Ok(mut s) = state.lock() {
-                    s.speed = speed;
-                    if let Ok(mut lock) = b.lock() {
-                        let _ = lock.set_keyboard_rgb(&s);
+        let bind_speed =
+            |btn: &Button,
+             speed: RgbSpeed,
+             group: Vec<Button>,
+             b: BackendHandle,
+             state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
+                let btn_clone = btn.clone();
+                btn.connect_clicked(move |_| {
+                    for other in &group {
+                        other.remove_css_class("suggested-action");
                     }
-                }
-            });
-        };
+                    btn_clone.add_css_class("suggested-action");
+                    if let Ok(mut s) = state.lock() {
+                        s.speed = speed;
+                        if let Ok(mut lock) = b.lock() {
+                            let _ = lock.set_keyboard_rgb(&s);
+                        }
+                    }
+                });
+            };
 
         let speed_buttons = vec![btn_slow.clone(), btn_normal.clone(), btn_fast.clone()];
-        bind_speed(&btn_slow, RgbSpeed::Slow, speed_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_speed(&btn_normal, RgbSpeed::Normal, speed_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_speed(&btn_fast, RgbSpeed::Fast, speed_buttons, backend.clone(), current_rgb.clone());
+        bind_speed(
+            &btn_slow,
+            RgbSpeed::Slow,
+            speed_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_speed(
+            &btn_normal,
+            RgbSpeed::Normal,
+            speed_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_speed(
+            &btn_fast,
+            RgbSpeed::Fast,
+            speed_buttons,
+            backend.clone(),
+            current_rgb.clone(),
+        );
 
         // Helper to bind Color buttons
-        let bind_color = |btn: &Button, color: RgbColor, group: Vec<Button>, b: BackendHandle, state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
-            let btn_clone = btn.clone();
-            btn.connect_clicked(move |_| {
-                for other in &group {
-                    other.remove_css_class("suggested-action");
-                }
-                btn_clone.add_css_class("suggested-action");
-                if let Ok(mut s) = state.lock() {
-                    s.color = color;
-                    if let Ok(mut lock) = b.lock() {
-                        let _ = lock.set_keyboard_rgb(&s);
+        let bind_color =
+            |btn: &Button,
+             color: RgbColor,
+             group: Vec<Button>,
+             b: BackendHandle,
+             state: std::sync::Arc<std::sync::Mutex<RgbConfig>>| {
+                let btn_clone = btn.clone();
+                btn.connect_clicked(move |_| {
+                    for other in &group {
+                        other.remove_css_class("suggested-action");
                     }
-                }
-            });
-        };
+                    btn_clone.add_css_class("suggested-action");
+                    if let Ok(mut s) = state.lock() {
+                        s.color = color;
+                        if let Ok(mut lock) = b.lock() {
+                            let _ = lock.set_keyboard_rgb(&s);
+                        }
+                    }
+                });
+            };
 
-        let color_buttons = vec![btn_orange.clone(), btn_red.clone(), btn_blue.clone(), btn_green.clone(), btn_white.clone()];
-        bind_color(&btn_orange, RgbColor::TUF_ORANGE, color_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_color(&btn_red, RgbColor::RED, color_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_color(&btn_blue, RgbColor::BLUE, color_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_color(&btn_green, RgbColor::GREEN, color_buttons.clone(), backend.clone(), current_rgb.clone());
-        bind_color(&btn_white, RgbColor::WHITE, color_buttons, backend.clone(), current_rgb.clone());
+        let color_buttons = vec![
+            btn_orange.clone(),
+            btn_red.clone(),
+            btn_blue.clone(),
+            btn_green.clone(),
+            btn_white.clone(),
+        ];
+        bind_color(
+            &btn_orange,
+            RgbColor::TUF_ORANGE,
+            color_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_color(
+            &btn_red,
+            RgbColor::RED,
+            color_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_color(
+            &btn_blue,
+            RgbColor::BLUE,
+            color_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_color(
+            &btn_green,
+            RgbColor::GREEN,
+            color_buttons.clone(),
+            backend.clone(),
+            current_rgb.clone(),
+        );
+        bind_color(
+            &btn_white,
+            RgbColor::WHITE,
+            color_buttons,
+            backend.clone(),
+            current_rgb.clone(),
+        );
 
         let container = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)

@@ -1,8 +1,8 @@
-use gtk4::{Label, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Label, ScrolledWindow};
 use tuf_core::models::SystemTelemetry;
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct FansPage {
@@ -86,13 +86,22 @@ impl FansPage {
     }
 
     pub fn update_telemetry(&self, telemetry: &SystemTelemetry) {
-        self.cpu_rpm_label.set_text(&format!("{} RPM ({:.1}°C)", telemetry.fans.cpu_fan_rpm, telemetry.cpu.temp_c));
-        
-        let gpu_temp_str = telemetry.gpu.temp_c
+        self.cpu_rpm_label.set_text(&format!(
+            "{} RPM ({:.1}°C)",
+            telemetry.fans.cpu_fan_rpm, telemetry.cpu.temp_c
+        ));
+
+        let gpu_temp_str = telemetry
+            .gpu
+            .temp_c
             .map(|t| format!(" ({:.1}°C)", t))
             .unwrap_or_else(|| " (Suspended)".into());
-        self.gpu_rpm_label.set_text(&format!("{} RPM{}", telemetry.fans.gpu_fan_rpm, gpu_temp_str));
+        self.gpu_rpm_label.set_text(&format!(
+            "{} RPM{}",
+            telemetry.fans.gpu_fan_rpm, gpu_temp_str
+        ));
 
-        self.status_label.set_text(&format!("Mode: {} (EC Regulated)", telemetry.active_mode));
+        self.status_label
+            .set_text(&format!("Mode: {} (EC Regulated)", telemetry.active_mode));
     }
 }

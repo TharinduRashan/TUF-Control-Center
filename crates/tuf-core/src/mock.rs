@@ -1,4 +1,3 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use crate::backend::HardwareBackend;
 use crate::capabilities::HardwareCapabilities;
 use crate::error::HardwareError;
@@ -6,6 +5,7 @@ use crate::models::{
     BatteryLimit, BatteryState, BatteryTelemetry, CpuTelemetry, FanTelemetry, GpuMode,
     GpuTelemetry, MemoryTelemetry, PerformanceMode, RgbConfig, SystemTelemetry,
 };
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct MockHardwareBackend {
     capabilities: HardwareCapabilities,

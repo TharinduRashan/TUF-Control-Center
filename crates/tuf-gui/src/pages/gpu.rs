@@ -1,9 +1,8 @@
-use gtk4::prelude::*;
-use gtk4::{Button, Label, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Button, Label, ScrolledWindow};
 use tuf_core::models::{GpuMode, SystemTelemetry};
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct GpuPage {
@@ -116,7 +115,8 @@ impl GpuPage {
                 temp, pwr
             ));
         } else {
-            self.dgpu_row.set_subtitle("NVIDIA GeForce RTX 3050 — Suspended in RTD3 (0W)");
+            self.dgpu_row
+                .set_subtitle("NVIDIA GeForce RTX 3050 — Suspended in RTD3 (0W)");
         }
 
         if telemetry.active_gpu_mode == GpuMode::Hybrid {

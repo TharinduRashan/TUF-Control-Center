@@ -1,9 +1,8 @@
-use gtk4::prelude::*;
-use gtk4::{Button, Label, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Button, Label, ScrolledWindow};
 use tuf_core::models::PerformanceMode;
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct PerformancePage {

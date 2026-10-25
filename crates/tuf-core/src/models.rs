@@ -1,7 +1,7 @@
+use crate::error::HardwareError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-use crate::error::HardwareError;
 
 /// Operating and performance profiles
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,8 +65,12 @@ impl PerformanceMode {
 
     pub fn description(self) -> &'static str {
         match self {
-            Self::Silent => "Quiet fan curves, lower power limits, ideal for battery & quiet environments",
-            Self::Balanced => "Optimal balance between acoustics, thermals, and everyday performance",
+            Self::Silent => {
+                "Quiet fan curves, lower power limits, ideal for battery & quiet environments"
+            }
+            Self::Balanced => {
+                "Optimal balance between acoustics, thermals, and everyday performance"
+            }
             Self::Turbo => "Maximum fan speeds and boosted CPU/GPU power ceilings for heavy gaming",
             Self::Custom => "Custom user-defined fan curves and power targets where supported",
         }
@@ -87,7 +91,9 @@ impl FromStr for PerformanceMode {
             "balanced" | "normal" | "0" => Ok(Self::Balanced),
             "turbo" | "performance" | "1" => Ok(Self::Turbo),
             "custom" => Ok(Self::Custom),
-            other => Err(HardwareError::InvalidValue(format!("Invalid performance mode: {other}"))),
+            other => Err(HardwareError::InvalidValue(format!(
+                "Invalid performance mode: {other}"
+            ))),
         }
     }
 }
@@ -121,7 +127,9 @@ impl BatteryLimit {
 
     pub fn description(self) -> &'static str {
         match self {
-            Self::MaximumLifespan => "60% - Maximum battery lifespan for predominantly plugged-in desktop use",
+            Self::MaximumLifespan => {
+                "60% - Maximum battery lifespan for predominantly plugged-in desktop use"
+            }
             Self::Balanced => "80% - Recommended for balanced daily use and reduced battery wear",
             Self::Full => "100% - Full capacity for maximum portable runtime away from an outlet",
         }
@@ -157,7 +165,9 @@ impl GpuMode {
 
     pub fn description(self) -> &'static str {
         match self {
-            Self::Hybrid => "AMD iGPU runs desktop; NVIDIA dGPU sleeps when idle and powers on for gaming",
+            Self::Hybrid => {
+                "AMD iGPU runs desktop; NVIDIA dGPU sleeps when idle and powers on for gaming"
+            }
             Self::Integrated => "NVIDIA GPU completely powered off for maximum battery life",
             Self::Dedicated => "Direct dGPU connection (requires physical hardware MUX switch)",
         }
@@ -177,7 +187,9 @@ impl FromStr for GpuMode {
             "hybrid" | "optimus" | "prime" => Ok(Self::Hybrid),
             "integrated" | "eco" | "igpu" => Ok(Self::Integrated),
             "dedicated" | "ultimate" | "dgpu" => Ok(Self::Dedicated),
-            other => Err(HardwareError::InvalidValue(format!("Invalid GPU mode: {other}"))),
+            other => Err(HardwareError::InvalidValue(format!(
+                "Invalid GPU mode: {other}"
+            ))),
         }
     }
 }
@@ -231,9 +243,21 @@ pub struct RgbColor {
 impl RgbColor {
     pub const RED: Self = Self { r: 255, g: 0, b: 0 };
     pub const GREEN: Self = Self { r: 0, g: 255, b: 0 };
-    pub const BLUE: Self = Self { r: 0, g: 128, b: 255 };
-    pub const TUF_ORANGE: Self = Self { r: 255, g: 128, b: 0 };
-    pub const WHITE: Self = Self { r: 255, g: 255, b: 255 };
+    pub const BLUE: Self = Self {
+        r: 0,
+        g: 128,
+        b: 255,
+    };
+    pub const TUF_ORANGE: Self = Self {
+        r: 255,
+        g: 128,
+        b: 0,
+    };
+    pub const WHITE: Self = Self {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
 
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
@@ -246,7 +270,9 @@ impl RgbColor {
     pub fn from_hex(hex: &str) -> Result<Self, HardwareError> {
         let clean = hex.trim().trim_start_matches('#');
         if clean.len() != 6 {
-            return Err(HardwareError::InvalidValue(format!("Invalid hex color: {hex}")));
+            return Err(HardwareError::InvalidValue(format!(
+                "Invalid hex color: {hex}"
+            )));
         }
         let r = u8::from_str_radix(&clean[0..2], 16)
             .map_err(|e| HardwareError::InvalidValue(e.to_string()))?;

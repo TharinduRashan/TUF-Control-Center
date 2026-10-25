@@ -51,25 +51,28 @@ impl LinuxHardwareBackend {
         }
     }
 
-    fn call_daemon<B: serde::Serialize + zbus::zvariant::Type>(&self, method: &str, body: &B) -> Result<(), HardwareError> {
-        let mut lock = self.connection.lock().map_err(|_| HardwareError::DBus("Connection lock poisoned".into()))?;
+    fn call_daemon<B: serde::Serialize + zbus::zvariant::Type>(
+        &self,
+        method: &str,
+        body: &B,
+    ) -> Result<(), HardwareError> {
+        let mut lock = self
+            .connection
+            .lock()
+            .map_err(|_| HardwareError::DBus("Connection lock poisoned".into()))?;
 
         if lock.is_none() {
             *lock = Connection::system().or_else(|_| Connection::session()).ok();
         }
 
         let conn = lock.as_ref().ok_or_else(|| {
-            HardwareError::DBus("TUF Daemon is not running. Please start tuf-daemon.service.".into())
+            HardwareError::DBus(
+                "TUF Daemon is not running. Please start tuf-daemon.service.".into(),
+            )
         })?;
 
-        conn.call_method(
-            Some(DESTINATION),
-            PATH,
-            Some(INTERFACE),
-            method,
-            body,
-        )
-        .map_err(|e| HardwareError::DBus(format!("D-Bus call to {method} failed: {e}")))?;
+        conn.call_method(Some(DESTINATION), PATH, Some(INTERFACE), method, body)
+            .map_err(|e| HardwareError::DBus(format!("D-Bus call to {method} failed: {e}")))?;
 
         Ok(())
     }
@@ -81,7 +84,8 @@ impl HardwareBackend for LinuxHardwareBackend {
     }
 
     fn read_telemetry(&mut self) -> Result<SystemTelemetry, HardwareError> {
-        self.telemetry_reader.read_system_telemetry(self.cached_mode, self.cached_gpu_mode)
+        self.telemetry_reader
+            .read_system_telemetry(self.cached_mode, self.cached_gpu_mode)
     }
 
     fn set_performance_mode(&mut self, mode: PerformanceMode) -> Result<(), HardwareError> {
@@ -100,7 +104,10 @@ impl HardwareBackend for LinuxHardwareBackend {
     }
 
     fn set_battery_limit(&mut self, limit: BatteryLimit) -> Result<(), HardwareError> {
-        info!("Applying hardware battery charge threshold: {}%", limit.as_pct());
+        info!(
+            "Applying hardware battery charge threshold: {}%",
+            limit.as_pct()
+        );
         let limit_val = limit.as_pct() as u32;
         self.call_daemon("set_battery_limit", &(limit_val,))?;
         self.cached_battery_limit = limit;
@@ -113,7 +120,8 @@ impl HardwareBackend for LinuxHardwareBackend {
             GpuMode::Hybrid => "hybrid",
             GpuMode::Integrated => "integrated",
             GpuMode::Dedicated => "dedicated",
-        }.to_string();
+        }
+        .to_string();
         self.call_daemon("set_gpu_mode", &(mode_str,))?;
         self.cached_gpu_mode = mode;
         Ok(())

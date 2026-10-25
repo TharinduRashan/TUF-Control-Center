@@ -1,11 +1,11 @@
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 use crate::error::HardwareError;
 use crate::models::{
     BatteryLimit, BatteryState, BatteryTelemetry, CpuTelemetry, FanTelemetry, GpuMode,
     GpuTelemetry, MemoryTelemetry, PerformanceMode, SystemTelemetry,
 };
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct LinuxTelemetryReader {
     last_cpu_idle: u64,
@@ -174,7 +174,9 @@ impl LinuxTelemetryReader {
         }
 
         // Active state: Read real temp if nvidia hwmon is available
-        let temp_c = self.nvidia_hwmon_temp_path.as_ref()
+        let temp_c = self
+            .nvidia_hwmon_temp_path
+            .as_ref()
             .and_then(|p| fs::read_to_string(p).ok())
             .and_then(|s| s.trim().parse::<f32>().ok())
             .map(|raw| raw / 1000.0)
@@ -251,8 +253,8 @@ impl LinuxTelemetryReader {
                 .and_then(|s| s.trim().parse().ok())
                 .unwrap_or(80);
 
-            let status_str = fs::read_to_string(bat.join("status"))
-                .unwrap_or_else(|_| "Unknown".into());
+            let status_str =
+                fs::read_to_string(bat.join("status")).unwrap_or_else(|_| "Unknown".into());
 
             let state = match status_str.trim().to_lowercase().as_str() {
                 "charging" => BatteryState::Charging,
@@ -289,7 +291,9 @@ impl LinuxTelemetryReader {
                     .ok()
                     .and_then(|s| s.trim().parse::<f64>().ok());
                 match (full, design) {
-                    (Some(f), Some(d)) if d > 0.0 => Some(((f / d) * 100.0).clamp(0.0, 100.0) as f32),
+                    (Some(f), Some(d)) if d > 0.0 => {
+                        Some(((f / d) * 100.0).clamp(0.0, 100.0) as f32)
+                    }
                     _ => Some(100.0),
                 }
             };

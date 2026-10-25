@@ -1,8 +1,7 @@
-use gtk4::prelude::*;
-use gtk4::{Button, Label, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
-use crate::app::BackendHandle;
+use gtk4::{Button, Label, ScrolledWindow};
 
 #[derive(Clone)]
 pub struct DiagnosticsPage {
@@ -34,7 +33,10 @@ impl DiagnosticsPage {
             .title("ASUS WMI Kernel Module")
             .subtitle("asus-nb-wmi / asus-wmi loaded")
             .build();
-        let ec_label = Label::builder().label("Active").css_classes(["success"]).build();
+        let ec_label = Label::builder()
+            .label("Active")
+            .css_classes(["success"])
+            .build();
         ec_row.add_suffix(&ec_label);
         hw_group.add(&ec_row);
 
@@ -42,7 +44,10 @@ impl DiagnosticsPage {
             .title("Hardware MUX Switch")
             .subtitle("Advanced Optimus physical multiplexer")
             .build();
-        let mux_label = Label::builder().label("Not Available on FA506NC").css_classes(["dim-label"]).build();
+        let mux_label = Label::builder()
+            .label("Not Available on FA506NC")
+            .css_classes(["dim-label"])
+            .build();
         mux_row.add_suffix(&mux_label);
         hw_group.add(&mux_row);
 
@@ -50,7 +55,10 @@ impl DiagnosticsPage {
             .title("Battery Threshold Register")
             .subtitle("/sys/class/power_supply/BAT0/charge_control_end_threshold")
             .build();
-        let bat_label = Label::builder().label("Supported (60/80/100%)").css_classes(["success"]).build();
+        let bat_label = Label::builder()
+            .label("Supported (60/80/100%)")
+            .css_classes(["success"])
+            .build();
         bat_row.add_suffix(&bat_label);
         hw_group.add(&bat_row);
 
@@ -130,6 +138,9 @@ impl DiagnosticsPage {
 
 fn chrono_or_now() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
     format!("Unix Epoch {}s", now)
 }

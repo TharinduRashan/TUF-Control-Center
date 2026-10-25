@@ -1,10 +1,9 @@
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, Orientation, ScrolledWindow};
-use adw::prelude::*;
-use adw::{ActionRow, PreferencesGroup};
-use tuf_core::models::{BatteryLimit, PerformanceMode, SystemTelemetry};
 use crate::app::BackendHandle;
 use crate::widgets::TelemetryCard;
+use adw::prelude::*;
+use adw::{ActionRow, PreferencesGroup};
+use gtk4::{Box as GtkBox, Button, Label, Orientation, ScrolledWindow};
+use tuf_core::models::{BatteryLimit, PerformanceMode, SystemTelemetry};
 
 #[derive(Clone)]
 pub struct DashboardPage {
@@ -189,7 +188,11 @@ impl DashboardPage {
             "Mode: {}  •  GPU: {}  •  Power: {}",
             telemetry.active_mode,
             telemetry.active_gpu_mode,
-            if telemetry.battery.ac_connected { "AC Power Connected" } else { "Running on Battery" }
+            if telemetry.battery.ac_connected {
+                "AC Power Connected"
+            } else {
+                "Running on Battery"
+            }
         ));
 
         // CPU Card
@@ -198,7 +201,11 @@ impl DashboardPage {
             "{:.1}% Load  |  {:.0} MHz{}",
             telemetry.cpu.usage_pct,
             telemetry.cpu.freq_mhz,
-            telemetry.cpu.power_w.map(|w| format!("  |  {:.1}W", w)).unwrap_or_default()
+            telemetry
+                .cpu
+                .power_w
+                .map(|w| format!("  |  {:.1}W", w))
+                .unwrap_or_default()
         );
         let cpu_status = if telemetry.cpu.temp_c >= 85.0 {
             Some("error")
@@ -207,7 +214,12 @@ impl DashboardPage {
         } else {
             Some("success")
         };
-        self.cpu_card.update_with_status(&cpu_val, &cpu_sub, (telemetry.cpu.usage_pct / 100.0) as f64, cpu_status);
+        self.cpu_card.update_with_status(
+            &cpu_val,
+            &cpu_sub,
+            (telemetry.cpu.usage_pct / 100.0) as f64,
+            cpu_status,
+        );
 
         // GPU Card
         let (gpu_val, gpu_sub, gpu_frac, gpu_status) = if telemetry.gpu.is_active {
@@ -235,12 +247,20 @@ impl DashboardPage {
                 None,
             )
         };
-        self.gpu_card.update_with_status(&gpu_val, &gpu_sub, gpu_frac, gpu_status);
+        self.gpu_card
+            .update_with_status(&gpu_val, &gpu_sub, gpu_frac, gpu_status);
 
         // Memory Card
-        let mem_val = format!("{} / {} MB", telemetry.memory.used_mb, telemetry.memory.total_mb);
+        let mem_val = format!(
+            "{} / {} MB",
+            telemetry.memory.used_mb, telemetry.memory.total_mb
+        );
         let mem_sub = format!("{:.1}% Utilized", telemetry.memory.usage_pct);
-        self.mem_card.update(&mem_val, &mem_sub, (telemetry.memory.usage_pct / 100.0) as f64);
+        self.mem_card.update(
+            &mem_val,
+            &mem_sub,
+            (telemetry.memory.usage_pct / 100.0) as f64,
+        );
 
         // Fans Card
         let fans_val = format!("CPU: {} RPM", telemetry.fans.cpu_fan_rpm);
@@ -250,14 +270,21 @@ impl DashboardPage {
         self.fans_card.update(&fans_val, &fans_sub, fan_frac);
 
         // Battery Card
-        let bat_val = format!("{}% — {}", telemetry.battery.percentage, telemetry.battery.state);
+        let bat_val = format!(
+            "{}% — {}",
+            telemetry.battery.percentage, telemetry.battery.state
+        );
         let bat_sub = format!(
             "Threshold: {}  |  Health: {:.1}%  |  Cycles: {}",
             telemetry.battery.current_limit,
             telemetry.battery.health_pct.unwrap_or(100.0),
             telemetry.battery.cycle_count.unwrap_or(0)
         );
-        self.bat_card.update(&bat_val, &bat_sub, telemetry.battery.percentage as f64 / 100.0);
+        self.bat_card.update(
+            &bat_val,
+            &bat_sub,
+            telemetry.battery.percentage as f64 / 100.0,
+        );
 
         // Highlight active buttons
         self.update_active_buttons(telemetry.active_mode, telemetry.battery.current_limit);

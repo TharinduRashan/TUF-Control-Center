@@ -1,8 +1,7 @@
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Orientation, Scale, ScrolledWindow};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
-use crate::app::BackendHandle;
+use gtk4::{Box as GtkBox, Button, Orientation, Scale, ScrolledWindow};
 
 #[derive(Clone)]
 pub struct DisplayPage {
@@ -108,7 +107,12 @@ fn apply_refresh_rate(rate: u32) {
         .spawn()
         .or_else(|_| {
             std::process::Command::new("wlr-randr")
-                .args(["--output", "eDP-1", "--mode", &format!("1920x1080@{}Hz", rate)])
+                .args([
+                    "--output",
+                    "eDP-1",
+                    "--mode",
+                    &format!("1920x1080@{}Hz", rate),
+                ])
                 .spawn()
         })
         .or_else(|_| {

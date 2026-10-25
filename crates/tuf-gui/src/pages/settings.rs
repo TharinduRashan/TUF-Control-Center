@@ -1,10 +1,9 @@
-use gtk4::prelude::*;
-use gtk4::{Button, Orientation, Scale, ScrolledWindow, Switch};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
+use gtk4::{Button, Orientation, Scale, ScrolledWindow, Switch};
 use tuf_core::models::{BatteryLimit, PerformanceMode, RgbConfig};
 use tuf_core::AppConfig;
-use crate::app::BackendHandle;
 
 #[derive(Clone)]
 pub struct SettingsPage {

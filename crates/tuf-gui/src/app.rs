@@ -1,10 +1,11 @@
+use gtk4::prelude::*;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use gtk4::prelude::*;
 use tracing::info;
 
-use tuf_core::{HardwareBackend, LinuxHardwareBackend, MockHardwareBackend};
 use crate::window::MainWindow;
+use tuf_core::{HardwareBackend, LinuxHardwareBackend, MockHardwareBackend};
 
 pub type BackendHandle = Arc<Mutex<std::boxed::Box<dyn HardwareBackend>>>;
 
@@ -23,7 +24,9 @@ impl TufApplication {
         let backend: BackendHandle = if simulate {
             Arc::new(Mutex::new(std::boxed::Box::new(MockHardwareBackend::new())))
         } else {
-            Arc::new(Mutex::new(std::boxed::Box::new(LinuxHardwareBackend::new())))
+            Arc::new(Mutex::new(
+                std::boxed::Box::new(LinuxHardwareBackend::new()),
+            ))
         };
 
         Self {
@@ -42,7 +45,7 @@ impl TufApplication {
             let main_win = MainWindow::new(app, backend.clone(), simulate);
             main_win.window.present();
 
-            let win_ref = Arc::new(main_win);
+            let win_ref = Rc::new(main_win);
 
             // Asynchronous background telemetry polling worker via async-channel
             let (sender, receiver) = async_channel::bounded::<tuf_core::models::SystemTelemetry>(4);

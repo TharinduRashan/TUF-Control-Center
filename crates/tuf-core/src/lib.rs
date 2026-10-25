@@ -3,8 +3,8 @@ pub mod capabilities;
 pub mod config;
 pub mod error;
 pub mod linux;
-pub mod models;
 pub mod mock;
+pub mod models;
 pub mod telemetry;
 
 pub use backend::HardwareBackend;
@@ -47,7 +47,10 @@ mod tests {
 
     #[test]
     fn test_battery_limits() {
-        assert_eq!(BatteryLimit::from_pct(60).unwrap(), BatteryLimit::MaximumLifespan);
+        assert_eq!(
+            BatteryLimit::from_pct(60).unwrap(),
+            BatteryLimit::MaximumLifespan
+        );
         assert_eq!(BatteryLimit::from_pct(80).unwrap(), BatteryLimit::Balanced);
         assert_eq!(BatteryLimit::from_pct(100).unwrap(), BatteryLimit::Full);
         assert!(BatteryLimit::from_pct(75).is_err());
@@ -71,10 +74,22 @@ mod tests {
         // Valid curve
         let valid = FanCurve {
             points: vec![
-                FanCurvePoint { temp_c: 40, speed_pct: 20 },
-                FanCurvePoint { temp_c: 55, speed_pct: 40 },
-                FanCurvePoint { temp_c: 70, speed_pct: 65 },
-                FanCurvePoint { temp_c: 85, speed_pct: 90 },
+                FanCurvePoint {
+                    temp_c: 40,
+                    speed_pct: 20,
+                },
+                FanCurvePoint {
+                    temp_c: 55,
+                    speed_pct: 40,
+                },
+                FanCurvePoint {
+                    temp_c: 70,
+                    speed_pct: 65,
+                },
+                FanCurvePoint {
+                    temp_c: 85,
+                    speed_pct: 90,
+                },
             ],
         };
         assert!(valid.validate().is_ok());
@@ -82,10 +97,22 @@ mod tests {
         // Non-monotonic temperature
         let non_monotonic = FanCurve {
             points: vec![
-                FanCurvePoint { temp_c: 40, speed_pct: 20 },
-                FanCurvePoint { temp_c: 35, speed_pct: 40 },
-                FanCurvePoint { temp_c: 70, speed_pct: 65 },
-                FanCurvePoint { temp_c: 85, speed_pct: 90 },
+                FanCurvePoint {
+                    temp_c: 40,
+                    speed_pct: 20,
+                },
+                FanCurvePoint {
+                    temp_c: 35,
+                    speed_pct: 40,
+                },
+                FanCurvePoint {
+                    temp_c: 70,
+                    speed_pct: 65,
+                },
+                FanCurvePoint {
+                    temp_c: 85,
+                    speed_pct: 90,
+                },
             ],
         };
         assert!(non_monotonic.validate().is_err());
@@ -93,10 +120,22 @@ mod tests {
         // Safety violation: 0% speed at high temperature
         let unsafe_curve = FanCurve {
             points: vec![
-                FanCurvePoint { temp_c: 40, speed_pct: 20 },
-                FanCurvePoint { temp_c: 55, speed_pct: 30 },
-                FanCurvePoint { temp_c: 75, speed_pct: 0 },
-                FanCurvePoint { temp_c: 85, speed_pct: 90 },
+                FanCurvePoint {
+                    temp_c: 40,
+                    speed_pct: 20,
+                },
+                FanCurvePoint {
+                    temp_c: 55,
+                    speed_pct: 30,
+                },
+                FanCurvePoint {
+                    temp_c: 75,
+                    speed_pct: 0,
+                },
+                FanCurvePoint {
+                    temp_c: 85,
+                    speed_pct: 90,
+                },
             ],
         };
         assert!(unsafe_curve.validate().is_err());
@@ -119,7 +158,8 @@ mod tests {
         assert_eq!(mock.get_performance_mode(), PerformanceMode::Turbo);
 
         // Battery limit change
-        mock.set_battery_limit(BatteryLimit::MaximumLifespan).unwrap();
+        mock.set_battery_limit(BatteryLimit::MaximumLifespan)
+            .unwrap();
         assert_eq!(mock.get_battery_limit(), BatteryLimit::MaximumLifespan);
 
         // Hardware MUX rejection test on FA506NC

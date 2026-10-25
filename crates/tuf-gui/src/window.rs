@@ -1,14 +1,13 @@
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Label, Orientation};
 use adw::prelude::*;
 use adw::{ApplicationWindow, HeaderBar, ViewStack, ViewSwitcherBar};
+use gtk4::{Box as GtkBox, Label, Orientation};
 
-use tuf_core::models::SystemTelemetry;
 use crate::app::BackendHandle;
 use crate::pages::{
     BatteryPage, DashboardPage, DiagnosticsPage, DisplayPage, FansPage, GpuPage, LightingPage,
     PerformancePage, SettingsPage, SystemPage,
 };
+use tuf_core::models::SystemTelemetry;
 
 pub struct MainWindow {
     pub window: ApplicationWindow,
@@ -20,11 +19,7 @@ pub struct MainWindow {
 }
 
 impl MainWindow {
-    pub fn new(
-        app: &adw::Application,
-        backend: BackendHandle,
-        is_simulation: bool,
-    ) -> Self {
+    pub fn new(app: &adw::Application, backend: BackendHandle, is_simulation: bool) -> Self {
         let window = ApplicationWindow::builder()
             .application(app)
             .title("TUF Control Center")
@@ -65,7 +60,11 @@ impl MainWindow {
 
         // 2. Performance
         let performance_page = PerformancePage::new(backend.clone());
-        let perf_page = stack.add_titled(&performance_page.container, Some("performance"), "Performance");
+        let perf_page = stack.add_titled(
+            &performance_page.container,
+            Some("performance"),
+            "Performance",
+        );
         perf_page.set_icon_name(Some("power-profile-balanced-symbolic"));
 
         // 3. GPU
@@ -105,7 +104,11 @@ impl MainWindow {
 
         // 10. Diagnostics
         let diagnostics_page = DiagnosticsPage::new(backend.clone());
-        let diag_page = stack.add_titled(&diagnostics_page.container, Some("diagnostics"), "Diagnostics");
+        let diag_page = stack.add_titled(
+            &diagnostics_page.container,
+            Some("diagnostics"),
+            "Diagnostics",
+        );
         diag_page.set_icon_name(Some("dialog-information-symbolic"));
 
         let switcher_bar = ViewSwitcherBar::builder()

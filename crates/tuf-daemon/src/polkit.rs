@@ -1,5 +1,5 @@
 use std::process::Command;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use tuf_core::error::HardwareError;
 
 pub struct PolkitChecker {
@@ -21,6 +21,7 @@ impl PolkitChecker {
             return Ok(());
         }
 
+        // Root caller (UID 0) is inherently authorized
         if caller_uid == 0 {
             return Ok(());
         }
@@ -29,6 +30,10 @@ impl PolkitChecker {
         cmd.arg("--action-id").arg(action_id);
         if !sender_bus_name.is_empty() {
             cmd.arg("--system-bus-name").arg(sender_bus_name);
+        } else {
+            return Err(HardwareError::PermissionDenied(
+                "Cannot authorize action: D-Bus sender bus name is missing".to_string(),
+            ));
         }
         cmd.arg("--allow-user-interaction");
 
@@ -39,14 +44,19 @@ impl PolkitChecker {
             }
             Ok(res) => {
                 let stderr = String::from_utf8_lossy(&res.stderr);
-                warn!("Polkit authorization denied for {action_id}: {stderr}");
+                warn!(
+                    "Polkit authorization denied for {action_id} (caller {caller_uid}): {stderr}"
+                );
                 Err(HardwareError::PermissionDenied(format!(
-                    "PolicyKit authorization failed for action {action_id}"
+                    "PolicyKit authorization failed for action {action_id}: {stderr}"
                 )))
             }
             Err(e) => {
-                warn!("pkcheck not available ({e}), allowing operation for local user {caller_uid}");
-                Ok(())
+                // Fail-closed: Never allow unprivileged access when authorization checker cannot be executed
+                error!("pkcheck execution failed: {e}. Denying privileged action for user {caller_uid}");
+                Err(HardwareError::PermissionDenied(format!(
+                    "PolicyKit authorization service unavailable: {e}"
+                )))
             }
         }
     }

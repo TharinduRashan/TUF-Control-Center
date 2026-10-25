@@ -1,7 +1,7 @@
-use gtk4::{Label, ScrolledWindow, Switch};
+use crate::app::BackendHandle;
 use adw::prelude::*;
 use adw::{ActionRow, PreferencesGroup, PreferencesPage};
-use crate::app::BackendHandle;
+use gtk4::{Label, ScrolledWindow, Switch};
 
 #[derive(Clone)]
 pub struct SystemPage {
@@ -25,7 +25,12 @@ impl SystemPage {
         touchpad_switch.connect_state_set(move |_, state| {
             let mode = if state { "enabled" } else { "disabled" };
             let _ = std::process::Command::new("gsettings")
-                .args(["set", "org.gnome.desktop.peripherals.touchpad", "send-events", mode])
+                .args([
+                    "set",
+                    "org.gnome.desktop.peripherals.touchpad",
+                    "send-events",
+                    mode,
+                ])
                 .spawn();
             gtk4::glib::Propagation::Proceed
         });
@@ -58,7 +63,9 @@ impl SystemPage {
         let fn_label = Label::builder()
             .label("Unsupported on FA506NC")
             .css_classes(["error", "dim-label"])
-            .tooltip_text("Hardware WMI returns -65536 on FA506NC; Fn keys are hardware-multiplexed.")
+            .tooltip_text(
+                "Hardware WMI returns -65536 on FA506NC; Fn keys are hardware-multiplexed.",
+            )
             .build();
         fn_row.add_suffix(&fn_label);
         group.add(&fn_row);

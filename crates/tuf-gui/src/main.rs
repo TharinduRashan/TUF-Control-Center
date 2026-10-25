@@ -5,9 +5,9 @@ mod pages;
 mod widgets;
 mod window;
 
+use crate::app::TufApplication;
 use clap::Parser;
 use tracing::info;
-use crate::app::TufApplication;
 
 #[derive(Parser, Debug)]
 #[command(

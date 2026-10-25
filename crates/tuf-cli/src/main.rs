@@ -44,14 +44,14 @@ enum Commands {
     /// Configure keyboard RGB lighting
     Rgb {
         /// Animation mode: static, breathing, strobing, colorcycle
-        #[arg(long, default_value = "static")]
-        mode: String,
+        #[arg(long, default_value = "static", value_parser = parse_rgb_mode)]
+        mode: RgbMode,
         /// Hex color (e.g. #FF8000)
-        #[arg(long, default_value = "#FF8000")]
-        color: String,
+        #[arg(long, default_value = "#FF8000", value_parser = parse_hex_color)]
+        color: RgbColor,
         /// Animation speed: slow, normal, fast
-        #[arg(long, default_value = "normal")]
-        speed: String,
+        #[arg(long, default_value = "normal", value_parser = parse_rgb_speed)]
+        speed: RgbSpeed,
     },
     /// Set keyboard backlight brightness (0 to 3)
     Brightness {
@@ -65,12 +65,41 @@ fn parse_profile(s: &str) -> Result<PerformanceMode, String> {
 }
 
 fn parse_battery_limit(s: &str) -> Result<BatteryLimit, String> {
-    let val: u8 = s.parse().map_err(|_| "Must be a number".to_string())?;
+    let val: u8 = s
+        .parse()
+        .map_err(|_| "Must be a number (60, 80, or 100)".to_string())?;
     BatteryLimit::from_pct(val).map_err(|e| e.to_string())
 }
 
 fn parse_gpu_mode(s: &str) -> Result<GpuMode, String> {
     s.parse::<GpuMode>().map_err(|e| e.to_string())
+}
+
+fn parse_rgb_mode(s: &str) -> Result<RgbMode, String> {
+    match s.trim().to_lowercase().as_str() {
+        "static" => Ok(RgbMode::Static),
+        "breathing" => Ok(RgbMode::Breathing),
+        "strobing" => Ok(RgbMode::Strobing),
+        "colorcycle" => Ok(RgbMode::ColorCycle),
+        other => Err(format!(
+            "Invalid RGB mode '{other}'. Supported modes: static, breathing, strobing, colorcycle"
+        )),
+    }
+}
+
+fn parse_rgb_speed(s: &str) -> Result<RgbSpeed, String> {
+    match s.trim().to_lowercase().as_str() {
+        "slow" => Ok(RgbSpeed::Slow),
+        "normal" => Ok(RgbSpeed::Normal),
+        "fast" => Ok(RgbSpeed::Fast),
+        other => Err(format!(
+            "Invalid RGB speed '{other}'. Supported speeds: slow, normal, fast"
+        )),
+    }
+}
+
+fn parse_hex_color(s: &str) -> Result<RgbColor, String> {
+    RgbColor::from_hex(s).map_err(|e| e.to_string())
 }
 
 #[tokio::main]
@@ -98,43 +127,40 @@ async fn handle_command<B: HardwareBackend>(
             let telemetry = backend.read_telemetry()?;
 
             if json {
-                println!("{}", serde_json::to_string_pretty(&telemetry)?);
+                let status_json = serde_json::json!({
+                    "capabilities": caps,
+                    "telemetry": telemetry,
+                });
+                println!("{}", serde_json::to_string_pretty(&status_json)?);
             } else {
                 println!("==================================================");
-                println!("  TUF Control Center — System Telemetry");
-                println!("  Model: {}", caps.model_name);
+                println!("  TUF Control Center Hardware Status");
                 println!("==================================================");
-                println!("  Active Mode     : {}", telemetry.active_mode);
+                println!("  Model           : {}", caps.model_name);
+                println!("  Mode            : {}", telemetry.active_mode);
                 println!("  GPU Mode        : {}", telemetry.active_gpu_mode);
-                println!("--------------------------------------------------");
                 println!(
-                    "  CPU             : {} ({:.1}% | {:.1}°C | {:.0} MHz)",
-                    telemetry.cpu.name,
-                    telemetry.cpu.usage_pct,
-                    telemetry.cpu.temp_c,
-                    telemetry.cpu.freq_mhz
+                    "  CPU             : {:.1}% | {:.1}°C",
+                    telemetry.cpu.usage_pct, telemetry.cpu.temp_c
                 );
-                let gpu_status = if telemetry.gpu.is_active {
-                    format!(
-                        "{:.1}°C | {:.1}% load | {:.1}W",
-                        telemetry.gpu.temp_c.unwrap_or(0.0),
-                        telemetry.gpu.usage_pct.unwrap_or(0.0),
-                        telemetry.gpu.power_w.unwrap_or(0.0)
-                    )
+                if telemetry.gpu.is_active {
+                    let usage = telemetry.gpu.usage_pct.unwrap_or(0.0);
+                    let temp = telemetry.gpu.temp_c.unwrap_or(0.0);
+                    let power = telemetry.gpu.power_w.unwrap_or(0.0);
+                    println!(
+                        "  dGPU (NVIDIA)   : {:.1}% | {:.1}°C ({:.1} W)",
+                        usage, temp, power
+                    );
                 } else {
-                    "Suspended (RTD3 0W)".into()
-                };
-                println!("  GPU             : {} ({})", telemetry.gpu.name, gpu_status);
+                    println!("  dGPU (NVIDIA)   : Suspended / D3cold (Saving power)");
+                }
                 println!(
                     "  Memory          : {} MB / {} MB ({:.1}%)",
-                    telemetry.memory.used_mb,
-                    telemetry.memory.total_mb,
-                    telemetry.memory.usage_pct
+                    telemetry.memory.used_mb, telemetry.memory.total_mb, telemetry.memory.usage_pct
                 );
                 println!(
                     "  Fans            : CPU {} RPM | GPU {} RPM",
-                    telemetry.fans.cpu_fan_rpm,
-                    telemetry.fans.gpu_fan_rpm
+                    telemetry.fans.cpu_fan_rpm, telemetry.fans.gpu_fan_rpm
                 );
                 println!(
                     "  Battery         : {}% [{}] (Limit: {})",
@@ -158,29 +184,17 @@ async fn handle_command<B: HardwareBackend>(
             println!("GPU mode set to: {}", mode);
         }
         Commands::Rgb { mode, color, speed } => {
-            let rgb_color = RgbColor::from_hex(&color)?;
-            let rgb_mode = match mode.to_lowercase().as_str() {
-                "breathing" => RgbMode::Breathing,
-                "strobing" => RgbMode::Strobing,
-                "colorcycle" => RgbMode::ColorCycle,
-                _ => RgbMode::Static,
-            };
-            let rgb_speed = match speed.to_lowercase().as_str() {
-                "slow" => RgbSpeed::Slow,
-                "fast" => RgbSpeed::Fast,
-                _ => RgbSpeed::Normal,
-            };
             let config = tuf_core::models::RgbConfig {
-                mode: rgb_mode,
-                color: rgb_color,
-                speed: rgb_speed,
+                mode,
+                color,
+                speed,
                 brightness: 3,
             };
             backend.set_keyboard_rgb(&config)?;
             println!(
-                "RGB configured: mode={}, color={}, speed={}",
+                "RGB configured: mode={}, color={}, speed={:?}",
                 config.mode.display_name(),
-                color,
+                color.to_hex(),
                 speed
             );
         }

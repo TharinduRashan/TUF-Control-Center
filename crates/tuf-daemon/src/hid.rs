@@ -15,14 +15,7 @@ impl TufHidController {
     }
 
     /// Sends a 16-byte TUF Aura lighting command
-    pub fn set_rgb(
-        &self,
-        mode: u32,
-        r: u8,
-        g: u8,
-        b: u8,
-        speed: u32,
-    ) -> Result<(), HardwareError> {
+    pub fn set_rgb(&self, mode: u32, r: u8, g: u8, b: u8, speed: u32) -> Result<(), HardwareError> {
         let speed_byte = match speed {
             0 => RgbSpeed::Slow.to_hid_byte(),
             1 => RgbSpeed::Normal.to_hid_byte(),
@@ -71,7 +64,10 @@ impl TufHidController {
             }
         }
 
-        info!("Emulated TUF RGB packet sent (mode={}, #{:02X}{:02X}{:02X})", mode, r, g, b);
+        info!(
+            "Emulated TUF RGB packet sent (mode={}, #{:02X}{:02X}{:02X})",
+            mode, r, g, b
+        );
         Ok(())
     }
 
@@ -83,7 +79,9 @@ impl TufHidController {
                 let name = entry.file_name();
                 let uevent_path = entry.path().join("device/uevent");
                 if let Ok(content) = fs::read_to_string(uevent_path) {
-                    if content.to_uppercase().contains("00000B05") || content.to_uppercase().contains("ASUS") {
+                    if content.to_uppercase().contains("00000B05")
+                        || content.to_uppercase().contains("ASUS")
+                    {
                         let dev = Path::new("/dev").join(name);
                         if dev.exists() {
                             return Some(dev);

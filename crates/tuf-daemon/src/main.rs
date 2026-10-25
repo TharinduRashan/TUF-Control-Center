@@ -4,8 +4,8 @@ mod polkit;
 mod safety;
 mod sysfs;
 
-use std::sync::Arc;
 use clap::Parser;
+use std::sync::Arc;
 use tracing::{info, warn};
 use zbus::connection::Builder;
 
@@ -62,12 +62,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let watchdog = SafetyWatchdog::new();
     watchdog.setup_signal_handlers(sysfs.clone());
 
-    let daemon = ControlCenterDaemon::new(
-        sysfs.clone(),
-        hid.clone(),
-        polkit.clone(),
-        args.simulate,
-    );
+    let daemon =
+        ControlCenterDaemon::new(sysfs.clone(), hid.clone(), polkit.clone(), args.simulate);
 
     let conn = if args.session_bus || args.simulate {
         info!("Binding D-Bus interface to Session Bus...");

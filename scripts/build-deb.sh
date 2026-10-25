@@ -68,16 +68,19 @@ cat << 'EOF' > "${BUILD_DIR}/DEBIAN/postinst"
 set -e
 
 if [ "$1" = "configure" ]; then
-    echo "Reloading systemd and activating tuf-daemon.service..."
-    systemctl daemon-reload || true
-    systemctl enable tuf-daemon.service || true
-    systemctl restart tuf-daemon.service || true
+    # Reload and start systemd service if systemd is running as PID 1
+    if [ -d /run/systemd/system ]; then
+        echo "Reloading systemd and activating tuf-daemon.service..."
+        systemctl daemon-reload || true
+        systemctl enable tuf-daemon.service || true
+        systemctl restart tuf-daemon.service || true
+    fi
     
     # Update icon and desktop cache
-    if which gtk-update-icon-cache >/dev/null 2>&1; then
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
         gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
     fi
-    if which update-desktop-database >/dev/null 2>&1; then
+    if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database -q /usr/share/applications || true
     fi
 fi
@@ -90,16 +93,38 @@ cat << 'EOF' > "${BUILD_DIR}/DEBIAN/prerm"
 #!/bin/sh
 set -e
 
-if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
-    echo "Stopping and disabling tuf-daemon.service..."
-    systemctl stop tuf-daemon.service || true
-    systemctl disable tuf-daemon.service || true
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    if [ -d /run/systemd/system ]; then
+        echo "Stopping and disabling tuf-daemon.service..."
+        systemctl stop tuf-daemon.service || true
+        systemctl disable tuf-daemon.service || true
+    fi
 fi
 exit 0
 EOF
 chmod 755 "${BUILD_DIR}/DEBIAN/prerm"
 
-# 8. Build Debian package
+# 8. Create post-remove script (cleanup on purge)
+cat << 'EOF' > "${BUILD_DIR}/DEBIAN/postrm"
+#!/bin/sh
+set -e
+
+if [ "$1" = "purge" ] || [ "$1" = "remove" ]; then
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload || true
+    fi
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+    fi
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database -q /usr/share/applications || true
+    fi
+fi
+exit 0
+EOF
+chmod 755 "${BUILD_DIR}/DEBIAN/postrm"
+
+# 9. Build Debian package
 mkdir -p "${DIST_DIR}"
 DEB_FILE="${DIST_DIR}/${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
 echo "-> Building .deb package with dpkg-deb..."

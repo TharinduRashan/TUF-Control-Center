@@ -1,7 +1,7 @@
+use crate::models::GpuMode;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use crate::models::GpuMode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HardwareCapabilities {
@@ -72,13 +72,17 @@ impl HardwareCapabilities {
 
         let is_asus = sys_vendor.to_lowercase().contains("asus");
 
-        let has_throttle_thermal_policy = Path::new("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy").exists();
+        let has_throttle_thermal_policy =
+            Path::new("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy").exists();
         let has_platform_profile = Path::new("/sys/firmware/acpi/platform_profile").exists();
 
-        let has_battery_threshold = Path::new("/sys/class/power_supply/BAT0/charge_control_end_threshold").exists()
-            || Path::new("/sys/class/power_supply/BAT1/charge_control_end_threshold").exists();
+        let has_battery_threshold =
+            Path::new("/sys/class/power_supply/BAT0/charge_control_end_threshold").exists()
+                || Path::new("/sys/class/power_supply/BAT1/charge_control_end_threshold").exists();
 
-        let has_cpu_epp = Path::new("/sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference").exists();
+        let has_cpu_epp =
+            Path::new("/sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference")
+                .exists();
 
         // Check for dual fans in asus-nb-wmi hwmon
         let has_dual_fans = probe_dual_fans();
@@ -107,14 +111,18 @@ impl HardwareCapabilities {
         };
 
         let mut refresh_rates = vec![60];
-        if model_name.contains("FA506") || model_name.contains("FA617") || model_name.contains("FX506") {
+        if model_name.contains("FA506")
+            || model_name.contains("FA617")
+            || model_name.contains("FX506")
+        {
             refresh_rates.push(144);
         }
 
         Self {
             model_name,
             sys_vendor,
-            has_throttle_thermal_policy: has_throttle_thermal_policy || (is_asus && has_platform_profile),
+            has_throttle_thermal_policy: has_throttle_thermal_policy
+                || (is_asus && has_platform_profile),
             has_platform_profile,
             has_battery_threshold,
             supported_battery_limits,

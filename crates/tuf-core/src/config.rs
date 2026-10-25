@@ -1,9 +1,9 @@
+use crate::error::HardwareError;
+use crate::models::{BatteryLimit, GpuMode, PerformanceMode, RgbConfig};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
-use crate::error::HardwareError;
-use crate::models::{BatteryLimit, GpuMode, PerformanceMode, RgbConfig};
 
 const CURRENT_CONFIG_VERSION: u32 = 1;
 
@@ -55,7 +55,10 @@ impl AppConfig {
             match Self::load_from_path(&path) {
                 Ok(cfg) => cfg,
                 Err(e) => {
-                    warn!("Failed to load config from {}: {e}. Creating backup and loading defaults.", path.display());
+                    warn!(
+                        "Failed to load config from {}: {e}. Creating backup and loading defaults.",
+                        path.display()
+                    );
                     let bak_path = path.with_extension("toml.bak");
                     let _ = fs::copy(&path, &bak_path);
                     let def = Self::default();
@@ -73,12 +76,16 @@ impl AppConfig {
     pub fn load_from_path<P: AsRef<Path>>(path: P) -> Result<Self, HardwareError> {
         let content = fs::read_to_string(path.as_ref())
             .map_err(|e| HardwareError::Io(format!("Could not read config file: {e}")))?;
-        let mut config: AppConfig = toml::from_str(&content)
-            .map_err(|e| HardwareError::Parse(format!("Failed to parse TOML configuration: {e}")))?;
+        let mut config: AppConfig = toml::from_str(&content).map_err(|e| {
+            HardwareError::Parse(format!("Failed to parse TOML configuration: {e}"))
+        })?;
 
         // Config version migration
         if config.version < CURRENT_CONFIG_VERSION {
-            info!("Migrating config schema from version {} to {}", config.version, CURRENT_CONFIG_VERSION);
+            info!(
+                "Migrating config schema from version {} to {}",
+                config.version, CURRENT_CONFIG_VERSION
+            );
             config.version = CURRENT_CONFIG_VERSION;
             let _ = config.save_to_path(path.as_ref());
         }
@@ -94,14 +101,14 @@ impl AppConfig {
         }
         let serialized = toml::to_string_pretty(self)
             .map_err(|e| HardwareError::Parse(format!("Failed to serialize config: {e}")))?;
-        
+
         // Write atomically via temporary file
         let tmp_path = p.with_extension("tmp");
         fs::write(&tmp_path, serialized)
             .map_err(|e| HardwareError::Io(format!("Could not write tmp config file: {e}")))?;
         fs::rename(&tmp_path, p)
             .map_err(|e| HardwareError::Io(format!("Could not commit config file: {e}")))?;
-        
+
         Ok(())
     }
 }

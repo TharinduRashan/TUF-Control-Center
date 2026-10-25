@@ -1,7 +1,7 @@
+use crate::sysfs::SysfsController;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tracing::info;
-use crate::sysfs::SysfsController;
 
 pub struct SafetyWatchdog {
     running: Arc<AtomicBool>,
